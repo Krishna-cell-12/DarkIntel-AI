@@ -1,0 +1,59 @@
+# ══════════════════════════════════════════════
+# DarkIntel-AI — .gitignore
+# ══════════════════════════════════════════════
+
+# ─── Dependencies ────────────────────────────
+node_modules/
+venv/
+.venv/
+env/
+__pypackages__/
+
+# ─── Build outputs ───────────────────────────
+dist/
+dist-ssr/
+build/
+*.local
+
+# ─── Environment / Secrets ───────────────────
+.env
+.env.local
+.env.*.local
+*.env
+
+# ─── Python ──────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+.eggs/
+
+# ─── Logs ────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ─── Editor / IDE ────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ─── OS files ────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Misc ────────────────────────────────────
+*.bak
+*.tmp
+*.swp
