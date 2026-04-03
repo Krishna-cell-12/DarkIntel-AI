@@ -51,6 +51,7 @@ from leak_detection.financial_detector import FinancialDetector
 from leak_detection.impact_estimator import estimate_impact
 from leak_detection.identity_linker import link_identities
 
+from alerts.alert_engine import build_prioritized_alerts
 from correlation.signal_correlator import correlate_sources
 
 # Optional: Groq client (works without API key in demo mode)
@@ -114,6 +115,11 @@ class TextRequest(BaseModel):
 
 class MultiTextRequest(BaseModel):
     texts: list[str] = Field(default_factory=list)
+
+
+class AlertsRequest(BaseModel):
+    texts: list[str] = Field(default_factory=list)
+    min_priority: str = Field(default="MEDIUM")
 
 
 class PostsRequest(BaseModel):
@@ -431,6 +437,24 @@ def correlate_signals(req: MultiTextRequest):
     """Correlate weak signals across multiple threat sources."""
     sources = [{"text": t, "label": f"source_{i}"} for i, t in enumerate(req.texts)]
     return correlate_sources(sources)
+
+
+# ====================================================================
+# Alert Generation
+# ====================================================================
+
+
+@app.get("/api/alerts")
+def get_alerts(limit: int = 20, min_priority: str = "MEDIUM"):
+    """Generate prioritized alerts from the threat feed."""
+    sample = SYNTHETIC_THREATS[: max(limit, 0)]
+    return build_prioritized_alerts(sample, min_priority=min_priority.upper())
+
+
+@app.post("/api/alerts/generate")
+def generate_alerts(req: AlertsRequest):
+    """Generate prioritized alerts from provided text inputs."""
+    return build_prioritized_alerts(req.texts, min_priority=req.min_priority.upper())
 
 
 # ====================================================================
