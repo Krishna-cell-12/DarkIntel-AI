@@ -1,0 +1,38 @@
+# Railway.app Deployment Configuration
+# Documentation: https://railway.app/docs/deploy/docker
+
+[build]
+builder = "dockerfile"
+dockerfile = "./Dockerfile.backend"
+
+[environment]
+# API Configuration
+HOST=0.0.0.0
+PORT=8000
+DEMO_MODE=true
+
+# Tor Configuration
+TOR_PROXY=127.0.0.1:9050
+TOR_ENABLED=false
+
+# Database
+DATABASE_URL=sqlite:///./darkintel.db
+
+# Cache
+REDIS_URL=
+
+# CORS Origins
+CORS_ORIGINS=*
+
+# Logging
+LOG_LEVEL=INFO
+
+# Optional: Add API keys here in Railway dashboard as secrets
+# GROQ_API_KEY=sk_...
+# ALCHEMY_API_KEY=...
+# ETHERSCAN_API_KEY=...
+
+[deployment]
+startCommand = "python -m uvicorn backend.orchestrator.main:app --host 0.0.0.0 --port 8000"
+dockerfile = "Dockerfile.backend"
+domains = ["darkintel-api.railway.app"]
