@@ -53,6 +53,7 @@ from leak_detection.identity_linker import link_identities
 
 from alerts.alert_engine import build_prioritized_alerts
 from correlation.signal_correlator import correlate_sources
+from ingestion.ingestor import ThreatIngestor
 
 # Optional: Groq client (works without API key in demo mode)
 _groq_available = False
@@ -120,6 +121,16 @@ class MultiTextRequest(BaseModel):
 class AlertsRequest(BaseModel):
     texts: list[str] = Field(default_factory=list)
     min_priority: str = Field(default="MEDIUM")
+
+
+class IngestItem(BaseModel):
+    text: str = Field(..., min_length=1, max_length=50000)
+    source: str = Field(default="manual")
+    language: str = Field(default="unknown")
+
+
+class IngestRequest(BaseModel):
+    items: list[IngestItem] = Field(default_factory=list)
 
 
 class PostsRequest(BaseModel):
@@ -455,6 +466,27 @@ def get_alerts(limit: int = 20, min_priority: str = "MEDIUM"):
 def generate_alerts(req: AlertsRequest):
     """Generate prioritized alerts from provided text inputs."""
     return build_prioritized_alerts(req.texts, min_priority=req.min_priority.upper())
+
+
+# ====================================================================
+# Ingestion
+# ====================================================================
+
+
+INGESTOR = ThreatIngestor(max_items=1000)
+
+
+@app.post("/api/ingest")
+def ingest_sources(req: IngestRequest):
+    """Ingest unstructured threat sources into in-memory buffer."""
+    payload = [item.model_dump() for item in req.items]
+    return INGESTOR.ingest_many(payload)
+
+
+@app.get("/api/ingest/recent")
+def ingest_recent(limit: int = 20, source_type: str | None = None):
+    """Return recent ingested source records."""
+    return INGESTOR.recent(limit=limit, source_type=source_type)
 
 
 # ====================================================================
