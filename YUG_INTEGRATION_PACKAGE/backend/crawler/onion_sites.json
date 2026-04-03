@@ -1,0 +1,50 @@
+{
+  "onion_sites": [
+    {
+      "id": 1,
+      "url": "http://thehiddenwiki.onion",
+      "name": "The Hidden Wiki",
+      "category": "directory",
+      "description": "Index of .onion sites and resources",
+      "last_tested": "2024-04-02"
+    },
+    {
+      "id": 2,
+      "url": "http://archivebuttafo7.onion",
+      "name": "Internet Archive Mirror",
+      "category": "archive",
+      "description": "Tor mirror of archive.org",
+      "last_tested": "2024-04-02"
+    },
+    {
+      "id": 3,
+      "url": "http://3g2upl4pq6kufc4m.onion",
+      "name": "DuckDuckGo Mirror",
+      "category": "search",
+      "description": "DuckDuckGo search engine on Tor",
+      "last_tested": "2024-04-02"
+    },
+    {
+      "id": 4,
+      "url": "http://longcatislong.onion",
+      "name": "Long Cat",
+      "category": "resource",
+      "description": "Onion site directory and documentation",
+      "last_tested": "2024-04-02"
+    },
+    {
+      "id": 5,
+      "url": "http://torproject.onion",
+      "name": "Tor Project",
+      "category": "documentation",
+      "description": "Official Tor project resources",
+      "last_tested": "2024-04-02"
+    }
+  ],
+  "crawl_config": {
+    "timeout": 30,
+    "retry_attempts": 3,
+    "batch_delay": 2,
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0"
+  }
+}

@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # Tor SOCKS Proxy for Dark Web Crawling
+  # ============================================
+  tor:
+    image: dperson/torproxy:latest
+    container_name: darkintel-tor
+    ports:
+      - "9050:9050"  # SOCKS5 proxy port
+      - "9051:9051"  # Control port
+    environment:
+      - TOR_WAIT_FOR_NETWORK=1
+    networks:
+      - darkintel-network
+    healthcheck:
+      test: ["CMD", "curl", "--socks5", "127.0.0.1:9050", "-m", "5", "http://check.torproject.org"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # ============================================
+  # Redis Cache for Demo Speed
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: darkintel-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - darkintel-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # DarkIntel Backend - Orchestrator
+  # ============================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: darkintel-backend
+    environment:
+      # API Configuration
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEMO_MODE=${DEMO_MODE:-true}
+      
+      # Tor Configuration
+      - TOR_PROXY=tor:9050
+      - TOR_ENABLED=${TOR_ENABLED:-false}
+      
+      # API Keys
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - ALCHEMY_API_KEY=${ALCHEMY_API_KEY:-}
+      - ETHERSCAN_API_KEY=${ETHERSCAN_API_KEY:-}
+      
+      # Database
+      - DATABASE_URL=sqlite:///./darkintel.db
+      
+      # Cache
+      - REDIS_URL=redis://redis:6379
+      
+      # CORS
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:3000,http://localhost:3001,http://frontend:5173
+      
+      # Logging
+      - LOG_LEVEL=INFO
+    
+    ports:
+      - "8000:8000"
+    
+    depends_on:
+      tor:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
+    volumes:
+      - ./backend:/app/backend
+      - ./data:/app/data
+    
+    networks:
+      - darkintel-network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    
+    restart: unless-stopped
+
+  # ============================================
+  # Frontend (React + Vite) - Optional
+  # ============================================
+  frontend:
+    build:
+      context: ./KRISHNA/frontend
+      dockerfile: Dockerfile
+    container_name: darkintel-frontend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000/ws
+      - VITE_DEMO_MODE=${DEMO_MODE:-true}
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./KRISHNA/frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0
+    networks:
+      - darkintel-network
+    restart: unless-stopped
+
+networks:
+  darkintel-network:
+    driver: bridge
+
+volumes:
+  tor-data:
+  backend-data:

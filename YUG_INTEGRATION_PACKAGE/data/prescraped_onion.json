@@ -1,0 +1,426 @@
+{
+  "scraped_messages": [
+    {
+      "id": 1,
+      "source_url": "http://marketplace.onion",
+      "message": "Database leak: 100,000 employee records from TechCorp including passwords and SSNs. Asking for 50 BTC ransom.",
+      "timestamp": "2024-04-03T10:30:00",
+      "threat_level": "critical",
+      "wallet_mentioned": "1A1z7agoat4oPLqkNVrQwW3JSLj9PNVsKg"
+    },
+    {
+      "id": 2,
+      "source_url": "http://forum.onion",
+      "message": "RaaS operation: 15 victims compromised this month. Fastest payment processing on the dark web. Bitcoin and Monero accepted.",
+      "timestamp": "2024-04-03T09:45:00",
+      "threat_level": "critical",
+      "wallet_mentioned": "bc1qp33q9z9n5z2x9v3q8n7z6y5x4w3v2u1t0s9r8q"
+    },
+    {
+      "id": 3,
+      "source_url": "http://exploit.onion",
+      "message": "Zero-day vulnerability in Apache Log4j published with working PoC code. Full weaponization available.",
+      "timestamp": "2024-04-03T08:20:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 4,
+      "source_url": "http://leaked.onion",
+      "message": "50,000 PaymentGateway credentials leaked. Login credentials tested and verified working on 95% of accounts.",
+      "timestamp": "2024-04-03T07:15:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 5,
+      "source_url": "http://malware.onion",
+      "message": "Ransomware-as-a-Service platform accepting new customers. Full SDK provided. C2 infrastructure stable and tested.",
+      "timestamp": "2024-04-03T06:30:00",
+      "threat_level": "critical",
+      "wallet_mentioned": "3J98t1WpEZ73CNmYviecrnyiWrnqRhWNLy"
+    },
+    {
+      "id": 6,
+      "source_url": "http://marketplace.onion",
+      "message": "Stolen credit card database: 2M Visa/Mastercard with CVV. $5 per card, bulk discounts available.",
+      "timestamp": "2024-04-03T05:00:00",
+      "threat_level": "critical",
+      "wallet_mentioned": "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2"
+    },
+    {
+      "id": 7,
+      "source_url": "http://forum.onion",
+      "message": "DDoS-for-hire: 1Gbps+ capacity. Tested against major financial institutions. $50/hour starting price.",
+      "timestamp": "2024-04-03T04:30:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 8,
+      "source_url": "http://exploit.onion",
+      "message": "SQL injection kit targeting WordPress sites. Automated scanning and exploitation included. Mass campaign active.",
+      "timestamp": "2024-04-03T03:15:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 9,
+      "source_url": "http://leaked.onion",
+      "message": "Healthcare provider data: 500K patient records with SSN, insurance, medical history. $50K asking price.",
+      "timestamp": "2024-04-03T02:00:00",
+      "threat_level": "critical",
+      "wallet_mentioned": "bc1qy5f0p6x9z8w7v6u5t4s3r2q1p0o9n8m7l6k5j4h"
+    },
+    {
+      "id": 10,
+      "source_url": "http://marketplace.onion",
+      "message": "Botnet control panels: 500K+ compromised Windows machines. Full access available. Starting at $1000/month.",
+      "timestamp": "2024-04-03T01:30:00",
+      "threat_level": "critical",
+      "wallet_mentioned": "1A1a4GFqqLvp2YfRjwkBPreVrQMyQLQiLx"
+    },
+    {
+      "id": 11,
+      "source_url": "http://forum.onion",
+      "message": "APT group recruiting: Looking for skilled penetration testers. Targeting energy sector infrastructure. High pay rates.",
+      "timestamp": "2024-04-02T23:45:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 12,
+      "source_url": "http://exploit.onion",
+      "message": "Metasploit module for Windows 11 exploitation. 0-day UAC bypass included. Detection evasion techniques provided.",
+      "timestamp": "2024-04-02T22:30:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 13,
+      "source_url": "http://malware.onion",
+      "message": "Stealer malware targeting cryptocurrency wallets and banking credentials. 30% infection rate documented.",
+      "timestamp": "2024-04-02T21:00:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 14,
+      "source_url": "http://leaked.onion",
+      "message": "Financial institution source code leaked: Swift banking system integration. Critical vulnerabilities documented.",
+      "timestamp": "2024-04-02T20:15:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 15,
+      "source_url": "http://marketplace.onion",
+      "message": "Fake identity documents: Passports, driver licenses, college degrees. All holograms included. Verified authentic.",
+      "timestamp": "2024-04-02T19:30:00",
+      "threat_level": "high",
+      "wallet_mentioned": "3FZbgi29cp4LsRwLCuNMUXbS5TyNEWjgYU"
+    },
+    {
+      "id": 16,
+      "source_url": "http://forum.onion",
+      "message": "Phishing kits for major banks: 95% success rate reported. Pre-configured landing pages and email templates.",
+      "timestamp": "2024-04-02T18:45:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 17,
+      "source_url": "http://exploit.onion",
+      "message": "Cisco IOS vulnerability (CVE-2024-5678): Remote code execution. 100K+ affected devices worldwide.",
+      "timestamp": "2024-04-02T17:20:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 18,
+      "source_url": "http://malware.onion",
+      "message": "Information stealer: Office 365, AWS, Azure credentials harvesting. 10K+ victims tracked. Daily fresh samples.",
+      "timestamp": "2024-04-02T16:00:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 19,
+      "source_url": "http://leaked.onion",
+      "message": "Cloud infrastructure secrets leak: API keys, database credentials from 50+ companies. Verified access confirmed.",
+      "timestamp": "2024-04-02T15:30:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 20,
+      "source_url": "http://marketplace.onion",
+      "message": "Compromised GitHub accounts: Full access with admin rights. Code injection possibilities. 100+ accounts available.",
+      "timestamp": "2024-04-02T14:15:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 21,
+      "source_url": "http://forum.onion",
+      "message": "Supply chain attack coordination: Major retailer inventory system compromised. Ready for mass product substitution.",
+      "timestamp": "2024-04-02T13:00:00",
+      "threat_level": "critical",
+      "wallet_mentioned": "3K3wnU8jZPd7VUxqXgYEXQW3qrJz4WXKVz"
+    },
+    {
+      "id": 22,
+      "source_url": "http://exploit.onion",
+      "message": "Browser 0-days: Chrome, Firefox, Safari all vulnerable. Exploit chain for full system compromise demonstrated.",
+      "timestamp": "2024-04-02T12:30:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 23,
+      "source_url": "http://malware.onion",
+      "message": "Wiper malware targeting critical infrastructure: Tested on energy grids. Irreversible data destruction.",
+      "timestamp": "2024-04-02T11:45:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 24,
+      "source_url": "http://leaked.onion",
+      "message": "Government database breach: Citizenship records, biometric data, travel history. 1M records affected.",
+      "timestamp": "2024-04-02T10:20:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 25,
+      "source_url": "http://marketplace.onion",
+      "message": "OPSEC guide: How to evade attribution and law enforcement tracking. Tested and verified by active threat actors.",
+      "timestamp": "2024-04-02T09:00:00",
+      "threat_level": "medium",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 26,
+      "source_url": "http://forum.onion",
+      "message": "Ransomware gang negotiations: Real-time leak of negotiation chats and payment amounts from latest victims.",
+      "timestamp": "2024-04-02T08:15:00",
+      "threat_level": "high",
+      "wallet_mentioned": "1cUNEBjYrCn2y1SdiDjXvCJ9Fn5YFKSpJp"
+    },
+    {
+      "id": 27,
+      "source_url": "http://exploit.onion",
+      "message": "VMware vCenter RCE: 50K+ vulnerable instances exposed. Exploit tools publicly released with mass scanning.",
+      "timestamp": "2024-04-02T07:30:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 28,
+      "source_url": "http://malware.onion",
+      "message": "Cryptojacker: Silently mines cryptocurrency on 100K+ PC. Undetectable by antivirus. Automatic update mechanism.",
+      "timestamp": "2024-04-02T06:45:00",
+      "threat_level": "high",
+      "wallet_mentioned": "bc1qmq0sn59p6p8pv7wf9xj9z8x7x6x5x4x3x2x1x0x"
+    },
+    {
+      "id": 29,
+      "source_url": "http://leaked.onion",
+      "message": "AI model source code stolen: GPT-like model training data and weights released. Ready for commercial exploitation.",
+      "timestamp": "2024-04-02T05:20:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 30,
+      "source_url": "http://marketplace.onion",
+      "message": "Insider threat marketplace: Corporate employees selling trade secrets, business plans, upcoming product launches.",
+      "timestamp": "2024-04-02T04:00:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 31,
+      "source_url": "http://forum.onion",
+      "message": "Mobile banking malware: Android and iOS trojans targeting financial apps. Session hijacking capabilities included.",
+      "timestamp": "2024-04-02T03:15:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 32,
+      "source_url": "http://exploit.onion",
+      "message": "Kubernetes cluster exploitation guide: Mass container escape techniques. Production systems targeted.",
+      "timestamp": "2024-04-02T02:30:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 33,
+      "source_url": "http://malware.onion",
+      "message": "Spyware for iPhones: Zero-click exploitation of iMessage. Complete device surveillance without detection.",
+      "timestamp": "2024-04-02T01:45:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 34,
+      "source_url": "http://leaked.onion",
+      "message": "Military contractor network breach: Classified project details, weapons system specifications leaked.",
+      "timestamp": "2024-04-02T00:20:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 35,
+      "source_url": "http://marketplace.onion",
+      "message": "Deepfake generation service: Custom video synthesis of politicians and celebrities. Weaponization for misinformation.",
+      "timestamp": "2024-04-01T23:30:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 36,
+      "source_url": "http://forum.onion",
+      "message": "Election interference campaign: Voter database manipulation techniques. Proven effectiveness in multiple countries.",
+      "timestamp": "2024-04-01T22:45:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 37,
+      "source_url": "http://exploit.onion",
+      "message": "SQL Server exploitation framework: T-SQL post-exploitation tools for full environment compromise.",
+      "timestamp": "2024-04-01T21:20:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 38,
+      "source_url": "http://malware.onion",
+      "message": "File-less malware: Registry-based persistence. Traditional antivirus completely bypassed. Memory-only operation.",
+      "timestamp": "2024-04-01T20:00:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 39,
+      "source_url": "http://leaked.onion",
+      "message": "Medical device vulnerabilities: Insulin pumps and pacemakers. Remote command injection demonstrated successfully.",
+      "timestamp": "2024-04-01T19:15:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 40,
+      "source_url": "http://marketplace.onion",
+      "message": "BGP hijacking services: Redirect internet traffic for victim. DNS spoofing capabilities included.",
+      "timestamp": "2024-04-01T18:30:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 41,
+      "source_url": "http://forum.onion",
+      "message": "Backup system exploitation: Veeam and Commvault bypass techniques. Ransomware recovery impossible.",
+      "timestamp": "2024-04-01T17:45:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 42,
+      "source_url": "http://exploit.onion",
+      "message": "Certificate authority compromise: SSL certificate generation for any domain. Full MITM capabilities.",
+      "timestamp": "2024-04-01T16:20:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 43,
+      "source_url": "http://malware.onion",
+      "message": "Quantum computing cryptanalysis service: RSA 2048-bit keys breakable. Ready for deployment.",
+      "timestamp": "2024-04-01T15:00:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 44,
+      "source_url": "http://leaked.onion",
+      "message": "Satellite communication intercept data: Military and commercial satellite signals decoded and analyzed.",
+      "timestamp": "2024-04-01T14:15:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 45,
+      "source_url": "http://marketplace.onion",
+      "message": "Social engineering guide: CEO fraud protocols tested against Fortune 500 companies. $50M+ confirmed stolen.",
+      "timestamp": "2024-04-01T13:30:00",
+      "threat_level": "high",
+      "wallet_mentioned": "3FZbgi29cp4LsRwLCuNMUXbS5TyNEWjgYU"
+    },
+    {
+      "id": 46,
+      "source_url": "http://forum.onion",
+      "message": "Smart contract vulnerabilities: Flash loan attacks for protocol manipulation. $100M+ possible theft.",
+      "timestamp": "2024-04-01T12:45:00",
+      "threat_level": "high",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 47,
+      "source_url": "http://exploit.onion",
+      "message": "5G network exploitation: Node B compromise techniques. National infrastructure vulnerability.",
+      "timestamp": "2024-04-01T11:20:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 48,
+      "source_url": "http://malware.onion",
+      "message": "Firmware rootkit: BIOS/UEFI level persistence. Survives OS reinstallation and disk formatting.",
+      "timestamp": "2024-04-01T10:00:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 49,
+      "source_url": "http://leaked.onion",
+      "message": "Nuclear facility network topology: SCADA system details from multiple countries' power plants revealed.",
+      "timestamp": "2024-04-01T09:15:00",
+      "threat_level": "critical",
+      "wallet_mentioned": null
+    },
+    {
+      "id": 50,
+      "source_url": "http://marketplace.onion",
+      "message": "Complete cyber weapons delivery service: End-to-end offensive capabilities provided. CTOs and nation-states welcome.",
+      "timestamp": "2024-04-01T08:30:00",
+      "threat_level": "critical",
+      "wallet_mentioned": "1A1z7agoat4oPLqkNVrQwW3JSLj9PNVsKg"
+    }
+  ],
+  "metadata": {
+    "total_messages": 50,
+    "critical_threats": 26,
+    "high_threats": 18,
+    "medium_threats": 6,
+    "date_range": {
+      "start": "2024-04-01T08:30:00",
+      "end": "2024-04-03T10:30:00"
+    },
+    "wallets_mentioned": 8,
+    "data_categories": [
+      "data_breaches",
+      "ransomware",
+      "exploit_kits",
+      "malware",
+      "phishing",
+      "ddos",
+      "supply_chain",
+      "cryptography",
+      "infrastructure"
+    ]
+  }
+}
