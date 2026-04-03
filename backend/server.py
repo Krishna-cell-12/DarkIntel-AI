@@ -43,6 +43,7 @@ load_dotenv(ROOT / "nlp" / ".env")
 
 # ── local imports ───────────────────────────────────────────────────
 from nlp.entity_extractor import EntityExtractor
+from nlp.language_detector import normalize_text_for_analysis
 from nlp.threat_scorer import KEYWORDS, calculate_base_score
 from nlp.slang_decoder import decode_message, get_slang_dictionary
 
@@ -198,7 +199,8 @@ def health():
 @app.post("/api/nlp/analyze")
 def nlp_analyze(req: TextRequest):
     started = time.perf_counter()
-    text = req.text
+    lang_info = normalize_text_for_analysis(req.text)
+    text = lang_info["normalized_text"]
 
     # 1. Regex-based entity extraction
     regex_entities = entity_extractor.extract_regex_entities(text)
@@ -257,6 +259,11 @@ def nlp_analyze(req: TextRequest):
         },
         "threat_score": {"score": score, "level": level, "factors": factors},
         "slang": slang_result,
+        "language": {
+            "detected": lang_info["detected_language"],
+            "translated_to_english": lang_info["translated_to_english"],
+        },
+        "original_text": lang_info["original_text"],
         "summary": summary
         or f"Analyzed {len(text)} chars. Found {slang_result['slang_count']} slang terms.",
         "processing_time_ms": round(elapsed, 2),
@@ -286,7 +293,8 @@ def slang_dictionary():
 @app.post("/api/leaks/detect")
 def leaks_detect(req: TextRequest):
     started = time.perf_counter()
-    text = req.text
+    lang_info = normalize_text_for_analysis(req.text)
+    text = lang_info["normalized_text"]
 
     cred = credential_detector.detect_all_credentials(text)
     fin = financial_detector.detect_financial(text)
@@ -298,6 +306,10 @@ def leaks_detect(req: TextRequest):
         "crypto_wallets": cred["crypto_wallets"],
         "total_count": cred["count"] + fin["count"],
         "max_severity": _max_severity([cred["max_severity"], fin["max_severity"]]),
+        "language": {
+            "detected": lang_info["detected_language"],
+            "translated_to_english": lang_info["translated_to_english"],
+        },
         "processing_time_ms": round((time.perf_counter() - started) * 1000, 2),
     }
     return result
@@ -311,7 +323,8 @@ def leaks_detect(req: TextRequest):
 @app.post("/api/leaks/impact")
 def leaks_impact(req: TextRequest):
     """Detect leaks AND estimate business impact in one call."""
-    text = req.text
+    lang_info = normalize_text_for_analysis(req.text)
+    text = lang_info["normalized_text"]
     cred = credential_detector.detect_all_credentials(text)
     fin = financial_detector.detect_financial(text)
 
@@ -326,6 +339,10 @@ def leaks_impact(req: TextRequest):
     return {
         "leaks": leak_data,
         "impact": impact,
+        "language": {
+            "detected": lang_info["detected_language"],
+            "translated_to_english": lang_info["translated_to_english"],
+        },
     }
 
 
