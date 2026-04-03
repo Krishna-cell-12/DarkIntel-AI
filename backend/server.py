@@ -51,6 +51,8 @@ from leak_detection.financial_detector import FinancialDetector
 from leak_detection.impact_estimator import estimate_impact
 from leak_detection.identity_linker import link_identities
 
+from correlation.signal_correlator import correlate_sources
+
 # Optional: Groq client (works without API key in demo mode)
 _groq_available = False
 try:
@@ -417,6 +419,18 @@ def dashboard_data():
 def precomputed_entities():
     """Return precomputed entity extraction results."""
     return {"count": len(PRECOMPUTED_ENTITIES), "data": PRECOMPUTED_ENTITIES[:20]}
+
+
+# ====================================================================
+# Signal Correlation
+# ====================================================================
+
+
+@app.post("/api/correlate")
+def correlate_signals(req: MultiTextRequest):
+    """Correlate weak signals across multiple threat sources."""
+    sources = [{"text": t, "label": f"source_{i}"} for i, t in enumerate(req.texts)]
+    return correlate_sources(sources)
 
 
 # ====================================================================
