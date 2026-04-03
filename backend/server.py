@@ -16,7 +16,6 @@ Run:
 from __future__ import annotations
 
 import json
-import logging
 import os
 import sys
 import time
@@ -25,13 +24,9 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.exceptions import RequestValidationError
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-
-logger = logging.getLogger("darkintel")
 
 # ── ensure sub-packages are importable ──────────────────────────────
 ROOT = Path(__file__).resolve().parent
@@ -51,16 +46,11 @@ from leak_detection.financial_detector import FinancialDetector
 from leak_detection.impact_estimator import estimate_impact
 from leak_detection.identity_linker import link_identities
 
-from alerts.alert_engine import build_prioritized_alerts
-from correlation.signal_correlator import correlate_sources
-from ingestion.ingestor import ThreatIngestor
-
 # Optional: Groq client (works without API key in demo mode)
 _groq_available = False
 try:
     from nlp.groq_client import GroqClient
     from nlp.prompts import ENTITY_EXTRACTION_PROMPT
-
     _groq_available = bool(os.getenv("GROQ_API_KEY"))
 except Exception:
     pass
@@ -78,8 +68,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=False,
+    allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -92,14 +82,12 @@ financial_detector = FinancialDetector()
 # ── load demo / precomputed data ────────────────────────────────────
 DATA_DIR = ROOT.parent / "data"
 
-
 def _load_json(name: str) -> Any:
     path = DATA_DIR / name
     if path.exists():
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
-
 
 SYNTHETIC_THREATS: list[str] = _load_json("synthetic_threats.json")
 PRECOMPUTED_ENTITIES: list[dict] = _load_json("precomputed_entities.json")
@@ -109,75 +97,19 @@ PRECOMPUTED_ENTITIES: list[dict] = _load_json("precomputed_entities.json")
 # Request / Response models
 # ====================================================================
 
-
 class TextRequest(BaseModel):
-    text: str = Field(..., min_length=1, max_length=50000)
-
+    text: str = Field(..., min_length=1)
 
 class MultiTextRequest(BaseModel):
     texts: list[str] = Field(default_factory=list)
-
-
-class AlertsRequest(BaseModel):
-    texts: list[str] = Field(default_factory=list)
-    min_priority: str = Field(default="MEDIUM")
-
-
-class IngestItem(BaseModel):
-    text: str = Field(..., min_length=1, max_length=50000)
-    source: str = Field(default="manual")
-    language: str = Field(default="unknown")
-
-
-class IngestRequest(BaseModel):
-    items: list[IngestItem] = Field(default_factory=list)
-
 
 class PostsRequest(BaseModel):
     posts: list[dict[str, Any]] = Field(default_factory=list)
 
 
 # ====================================================================
-# Global Exception Handlers
-# ====================================================================
-
-
-@app.exception_handler(RequestValidationError)
-async def validation_error_handler(request: Request, exc: RequestValidationError):
-    logger.error("Validation error on %s: %s", request.url.path, exc.errors())
-    return JSONResponse(
-        status_code=422,
-        content={"error": "Validation failed", "details": exc.errors()},
-    )
-
-
-@app.exception_handler(HTTPException)
-async def http_error_handler(request: Request, exc: HTTPException):
-    logger.error(
-        "HTTP error on %s: %d - %s", request.url.path, exc.status_code, exc.detail
-    )
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"error": exc.detail},
-    )
-
-
-@app.exception_handler(Exception)
-async def general_error_handler(request: Request, exc: Exception):
-    logger.exception("Unhandled error on %s: %s", request.url.path, str(exc))
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": "Internal server error",
-            "detail": "An unexpected error occurred",
-        },
-    )
-
-
-# ====================================================================
 # Health endpoint
 # ====================================================================
-
 
 @app.get("/api/health")
 def health():
@@ -193,7 +125,6 @@ def health():
 # ====================================================================
 # NLP — Analyze text
 # ====================================================================
-
 
 @app.post("/api/nlp/analyze")
 def nlp_analyze(req: TextRequest):
@@ -257,8 +188,7 @@ def nlp_analyze(req: TextRequest):
         },
         "threat_score": {"score": score, "level": level, "factors": factors},
         "slang": slang_result,
-        "summary": summary
-        or f"Analyzed {len(text)} chars. Found {slang_result['slang_count']} slang terms.",
+        "summary": summary or f"Analyzed {len(text)} chars. Found {slang_result['slang_count']} slang terms.",
         "processing_time_ms": round(elapsed, 2),
     }
 
@@ -266,7 +196,6 @@ def nlp_analyze(req: TextRequest):
 # ====================================================================
 # NLP — Slang decoder (standalone)
 # ====================================================================
-
 
 @app.post("/api/nlp/slang/decode")
 def slang_decode(req: TextRequest):
@@ -281,7 +210,6 @@ def slang_dictionary():
 # ====================================================================
 # Leak Detection — Detect all
 # ====================================================================
-
 
 @app.post("/api/leaks/detect")
 def leaks_detect(req: TextRequest):
@@ -306,7 +234,6 @@ def leaks_detect(req: TextRequest):
 # ====================================================================
 # Leak Detection — Impact estimation
 # ====================================================================
-
 
 @app.post("/api/leaks/impact")
 def leaks_impact(req: TextRequest):
@@ -333,7 +260,6 @@ def leaks_impact(req: TextRequest):
 # Identity Linking
 # ====================================================================
 
-
 @app.post("/api/leaks/identities")
 def leaks_identities(req: PostsRequest):
     """Link identities across multiple posts."""
@@ -351,7 +277,6 @@ def leaks_identities(req: PostsRequest):
 # Threat Feed (demo data)
 # ====================================================================
 
-
 @app.get("/api/threats/feed")
 def threat_feed(limit: int = 20):
     """Get the threat feed — uses precomputed demo data."""
@@ -360,25 +285,22 @@ def threat_feed(limit: int = 20):
         entities = entity_extractor.extract_regex_entities(msg)
         score, level = calculate_base_score(msg, entities)
         slang = decode_message(msg)
-        threats.append(
-            {
-                "id": f"threat_{i:03d}",
-                "content": msg[:200] + ("..." if len(msg) > 200 else ""),
-                "full_content": msg,
-                "entities": entities,
-                "threat_score": score,
-                "threat_level": level,
-                "slang_count": slang["slang_count"],
-                "timestamp": datetime.now().isoformat(),
-            }
-        )
+        threats.append({
+            "id": f"threat_{i:03d}",
+            "content": msg[:200] + ("..." if len(msg) > 200 else ""),
+            "full_content": msg,
+            "entities": entities,
+            "threat_score": score,
+            "threat_level": level,
+            "slang_count": slang["slang_count"],
+            "timestamp": datetime.now().isoformat(),
+        })
     return {"threats": threats, "total": len(threats)}
 
 
 # ====================================================================
 # Dashboard data
 # ====================================================================
-
 
 @app.get("/api/dashboard/stats")
 def dashboard_stats():
@@ -431,7 +353,6 @@ def dashboard_data():
 # Precomputed entities endpoint
 # ====================================================================
 
-
 @app.get("/api/precomputed/entities")
 def precomputed_entities():
     """Return precomputed entity extraction results."""
@@ -439,60 +360,8 @@ def precomputed_entities():
 
 
 # ====================================================================
-# Signal Correlation
-# ====================================================================
-
-
-@app.post("/api/correlate")
-def correlate_signals(req: MultiTextRequest):
-    """Correlate weak signals across multiple threat sources."""
-    sources = [{"text": t, "label": f"source_{i}"} for i, t in enumerate(req.texts)]
-    return correlate_sources(sources)
-
-
-# ====================================================================
-# Alert Generation
-# ====================================================================
-
-
-@app.get("/api/alerts")
-def get_alerts(limit: int = 20, min_priority: str = "MEDIUM"):
-    """Generate prioritized alerts from the threat feed."""
-    sample = SYNTHETIC_THREATS[: max(limit, 0)]
-    return build_prioritized_alerts(sample, min_priority=min_priority.upper())
-
-
-@app.post("/api/alerts/generate")
-def generate_alerts(req: AlertsRequest):
-    """Generate prioritized alerts from provided text inputs."""
-    return build_prioritized_alerts(req.texts, min_priority=req.min_priority.upper())
-
-
-# ====================================================================
-# Ingestion
-# ====================================================================
-
-
-INGESTOR = ThreatIngestor(max_items=1000)
-
-
-@app.post("/api/ingest")
-def ingest_sources(req: IngestRequest):
-    """Ingest unstructured threat sources into in-memory buffer."""
-    payload = [item.model_dump() for item in req.items]
-    return INGESTOR.ingest_many(payload)
-
-
-@app.get("/api/ingest/recent")
-def ingest_recent(limit: int = 20, source_type: str | None = None):
-    """Return recent ingested source records."""
-    return INGESTOR.recent(limit=limit, source_type=source_type)
-
-
-# ====================================================================
 # Helpers
 # ====================================================================
-
 
 def _max_severity(levels: list[str]) -> str:
     order = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
@@ -508,19 +377,10 @@ def _max_severity(levels: list[str]) -> str:
 if __name__ == "__main__":
     import uvicorn
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-    logger = logging.getLogger("darkintel")
-
     port = int(os.getenv("PORT", "8000"))
-    logger.info("DarkIntel-AI server starting on http://localhost:%d", port)
-    logger.info("API docs at http://localhost:%d/docs", port)
-    logger.info(
-        "Groq LLM: %s", "available" if _groq_available else "demo mode (no API key)"
-    )
-    logger.info("Demo data: %d synthetic threats loaded", len(SYNTHETIC_THREATS))
+    print(f"\n🚀 DarkIntel-AI server starting on http://localhost:{port}")
+    print(f"📚 API docs at http://localhost:{port}/docs")
+    print(f"🔑 Groq LLM: {'✅ available' if _groq_available else '❌ demo mode (no API key)'}")
+    print(f"📊 Demo data: {len(SYNTHETIC_THREATS)} synthetic threats loaded\n")
 
     uvicorn.run("server:app", host="0.0.0.0", port=port, reload=True)
