@@ -12,6 +12,7 @@ from typing import Any
 # Comprehensive dark web slang dictionary
 SLANG_DICTIONARY: dict[str, str] = {
     # Credential & Data Theft
+    "fresh": "freshly obtained stolen data (often credentials/logs)",
     "fresh logs": "recently stolen credentials / session cookies",
     "logs": "stolen browser session data or credentials",
     "fullz": "complete identity data (name, SSN, DOB, address, etc.)",
@@ -25,7 +26,6 @@ SLANG_DICTIONARY: dict[str, str] = {
     "config": "tool configuration file for credential stuffing attacks",
     "hits": "valid/working stolen credentials after testing",
     "dehashed": "credentials obtained from breached database lookups",
-
     # Financial Fraud
     "carding": "using stolen credit card data for purchases",
     "bins": "bank identification numbers used to generate fake cards",
@@ -36,7 +36,6 @@ SLANG_DICTIONARY: dict[str, str] = {
     "money mule": "person who transfers stolen money on behalf of criminals",
     "loading": "putting stolen funds onto prepaid cards",
     "swipe": "cloned credit card with stolen magnetic stripe data",
-
     # Hacking & Exploits
     "zero day": "previously unknown software vulnerability",
     "0day": "previously unknown software vulnerability",
@@ -56,14 +55,12 @@ SLANG_DICTIONARY: dict[str, str] = {
     "sqli": "SQL injection attack to access databases",
     "rce": "remote code execution vulnerability",
     "lpe": "local privilege escalation exploit",
-
     # Ransomware
     "raas": "ransomware-as-a-service (rented ransomware operation)",
     "locker": "ransomware that locks the victim's system",
     "encryptor": "ransomware that encrypts victim files",
     "decryptor": "tool to decrypt files after ransom payment",
     "ransom note": "message demanding payment to restore access",
-
     # Communication & Operations
     "opsec": "operational security practices to avoid detection",
     "burner": "disposable phone/email used for anonymity",
@@ -74,7 +71,6 @@ SLANG_DICTIONARY: dict[str, str] = {
     "vpn": "virtual private network for hiding IP address",
     "proxy": "intermediary server to mask network origin",
     "socks": "SOCKS proxy for routing traffic anonymously",
-
     # Dark Web Marketplace
     "vendor": "seller on a dark web marketplace",
     "escrow": "marketplace holds payment until buyer confirms delivery",
@@ -87,11 +83,38 @@ SLANG_DICTIONARY: dict[str, str] = {
     "exit scam": "marketplace/vendor disappearing with funds",
 }
 
+# Non-English slang aliases mapped to existing meanings
+MULTILINGUAL_ALIASES: dict[str, str] = {
+    # Russian
+    "свежие": "fresh",
+    "логи": "logs",
+    "фулз": "fullz",
+    "кардинг": "carding",
+    # Spanish
+    "credenciales": "logs",
+    "tarjetas": "cc",
+    # French
+    "identites completes": "fullz",
+    "cartes volees": "cc dumps",
+}
+
 # Compile regex patterns for efficient matching
 _PATTERNS: list[tuple[re.Pattern[str], str, str]] = [
     (re.compile(rf"\b{re.escape(slang)}\b", re.IGNORECASE), slang, meaning)
     for slang, meaning in SLANG_DICTIONARY.items()
 ]
+
+_ALIAS_PATTERNS: list[tuple[re.Pattern[str], str, str]] = [
+    (
+        re.compile(rf"\b{re.escape(alias)}\b", re.IGNORECASE),
+        alias,
+        SLANG_DICTIONARY[normalized],
+    )
+    for alias, normalized in MULTILINGUAL_ALIASES.items()
+    if normalized in SLANG_DICTIONARY
+]
+
+_ALL_PATTERNS = _PATTERNS + _ALIAS_PATTERNS
 
 
 def decode_message(text: str) -> dict[str, Any]:
@@ -106,17 +129,19 @@ def decode_message(text: str) -> dict[str, Any]:
     slang_found: list[dict[str, Any]] = []
     seen_terms: set[str] = set()
 
-    for pattern, term, meaning in _PATTERNS:
+    for pattern, term, meaning in _ALL_PATTERNS:
         for match in pattern.finditer(text):
             key = (term.lower(), match.start())
             if key not in seen_terms:
                 seen_terms.add(key)
-                slang_found.append({
-                    "term": match.group(0),
-                    "normalized_term": term,
-                    "meaning": meaning,
-                    "position": match.start(),
-                })
+                slang_found.append(
+                    {
+                        "term": match.group(0),
+                        "normalized_term": term,
+                        "meaning": meaning,
+                        "position": match.start(),
+                    }
+                )
 
     # Sort by position in text
     slang_found.sort(key=lambda x: x["position"])
@@ -126,7 +151,7 @@ def decode_message(text: str) -> dict[str, Any]:
     for item in reversed(slang_found):
         pos = item["position"]
         end = pos + len(item["term"])
-        annotation = f'{item["term"]} [{item["meaning"]}]'
+        annotation = f"{item['term']} [{item['meaning']}]"
         decoded_text = decoded_text[:pos] + annotation + decoded_text[end:]
 
     # Risk boost based on slang density

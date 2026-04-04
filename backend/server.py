@@ -53,7 +53,10 @@ from leak_detection.impact_estimator import estimate_impact
 from leak_detection.identity_linker import link_identities
 
 from alerts.alert_engine import build_prioritized_alerts
+from analytics.company_lookup import build_company_risk_report
 from correlation.signal_correlator import correlate_sources
+from crawler.sources import DEFAULT_ONION_SOURCES, sanitize_sources
+from crawler.tor_client import TorClient
 from ingestion.ingestor import ThreatIngestor
 
 # Optional: Groq client (works without API key in demo mode)
@@ -105,6 +108,16 @@ def _load_json(name: str) -> Any:
 SYNTHETIC_THREATS: list[str] = _load_json("synthetic_threats.json")
 PRECOMPUTED_ENTITIES: list[dict] = _load_json("precomputed_entities.json")
 
+CRAWL_STATE: dict[str, Any] = {
+    "status": "idle",
+    "started_at": None,
+    "completed_at": None,
+    "last_error": None,
+    "tor_connected": False,
+    "results_count": 0,
+}
+CRAWLED_RECORDS: list[dict[str, Any]] = []
+
 
 # ====================================================================
 # Request / Response models
@@ -132,6 +145,13 @@ class IngestItem(BaseModel):
 
 class IngestRequest(BaseModel):
     items: list[IngestItem] = Field(default_factory=list)
+
+
+class CrawlRequest(BaseModel):
+    urls: list[str] = Field(default_factory=list)
+    timeout_seconds: int = Field(default=25, ge=5, le=120)
+    tor_proxy: str = Field(default="127.0.0.1:9050")
+    source_prefix: str = Field(default="tor_live")
 
 
 class PostsRequest(BaseModel):
@@ -504,6 +524,144 @@ def ingest_sources(req: IngestRequest):
 def ingest_recent(limit: int = 20, source_type: str | None = None):
     """Return recent ingested source records."""
     return INGESTOR.recent(limit=limit, source_type=source_type)
+
+
+# ====================================================================
+# Live Tor Crawler
+# ====================================================================
+
+
+@app.post("/api/crawler/start")
+def crawler_start(req: CrawlRequest):
+    """Run a Tor crawl and ingest fetched unstructured records."""
+    CRAWL_STATE.update(
+        {
+            "status": "running",
+            "started_at": datetime.now().isoformat(),
+            "completed_at": None,
+            "last_error": None,
+            "tor_connected": False,
+            "results_count": 0,
+        }
+    )
+
+    urls = req.urls or [x["url"] for x in DEFAULT_ONION_SOURCES]
+    source_map = {x["url"]: x["source"] for x in DEFAULT_ONION_SOURCES}
+    sources = sanitize_sources(
+        [
+            {
+                "url": u,
+                "source": source_map.get(u, f"{req.source_prefix}_source"),
+                "category": "unknown",
+            }
+            for u in urls
+        ]
+    )
+    if not sources:
+        CRAWL_STATE.update({"status": "failed", "last_error": "no_valid_onion_sources"})
+        raise HTTPException(status_code=400, detail="No valid .onion URLs provided")
+
+    client = TorClient(tor_proxy=req.tor_proxy, timeout=req.timeout_seconds)
+    conn = client.check_connection()
+    CRAWL_STATE["tor_connected"] = bool(conn.get("connected"))
+    if not conn.get("connected"):
+        CRAWL_STATE.update(
+            {
+                "status": "failed",
+                "completed_at": datetime.now().isoformat(),
+                "last_error": f"tor_unreachable: {conn.get('message')}",
+            }
+        )
+        raise HTTPException(
+            status_code=502, detail=f"Tor unavailable: {conn.get('message')}"
+        )
+
+    crawled_now: list[dict[str, Any]] = []
+    ingested_payload: list[dict[str, str]] = []
+    for src in sources:
+        result = client.fetch_onion(src["url"])
+        row = {
+            "url": src["url"],
+            "source": src["source"],
+            "category": src["category"],
+            "timestamp": datetime.now().isoformat(),
+            "status": result.get("status", "failed"),
+            "title": result.get("content", {}).get("title", "")
+            if result.get("content")
+            else "",
+            "text": result.get("content", {}).get("text", "")
+            if result.get("content")
+            else "",
+            "error": result.get("error"),
+        }
+        crawled_now.append(row)
+        if row["status"] == "success" and row["text"]:
+            ingested_payload.append(
+                {"text": row["text"], "source": src["source"], "language": "unknown"}
+            )
+
+    CRAWLED_RECORDS.extend(crawled_now)
+    ingest_result = INGESTOR.ingest_many(ingested_payload)
+    CRAWL_STATE.update(
+        {
+            "status": "completed",
+            "completed_at": datetime.now().isoformat(),
+            "results_count": len(crawled_now),
+            "last_error": None,
+        }
+    )
+    return {
+        "crawl_state": CRAWL_STATE,
+        "sources_attempted": len(sources),
+        "sources_successful": len([x for x in crawled_now if x["status"] == "success"]),
+        "sources_failed": len([x for x in crawled_now if x["status"] != "success"]),
+        "ingest_result": ingest_result,
+        "results_preview": crawled_now[:10],
+    }
+
+
+@app.get("/api/crawler/status")
+def crawler_status():
+    """Return latest Tor crawl status."""
+    return dict(CRAWL_STATE)
+
+
+@app.get("/api/crawler/results")
+def crawler_results(limit: int = 20):
+    """Return latest crawled records."""
+    return {
+        "count": min(max(limit, 0), len(CRAWLED_RECORDS)),
+        "total": len(CRAWLED_RECORDS),
+        "items": CRAWLED_RECORDS[-max(limit, 0) :],
+    }
+
+
+# ====================================================================
+# Company Breach Lookup
+# ====================================================================
+
+
+@app.get("/api/company/lookup")
+def company_lookup(name: str):
+    """Lookup company breach/risk indicators from unstructured intelligence."""
+    records = []
+
+    # Live crawled + ingested records
+    records.extend(CRAWLED_RECORDS)
+    recent_ingested = INGESTOR.recent(limit=500).get("items", [])
+    records.extend(recent_ingested)
+
+    # Existing synthetic dataset as supplemental signal
+    for i, text in enumerate(SYNTHETIC_THREATS):
+        records.append(
+            {
+                "text": text,
+                "source": f"synthetic_feed_{i % 5}",
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
+    return build_company_risk_report(name, records)
 
 
 # ====================================================================
