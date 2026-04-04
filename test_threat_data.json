@@ -1,0 +1,20 @@
+[
+  {
+    "id": "leak_001",
+    "source": "pastebin_dump_902",
+    "language": "en",
+    "text": "MASSIVE LEAK: TechCorp internal user database breached today.\nHere is the access for the primary admin:\nadmin@techcorp.com:SuperSecr3tPassword2026!\ndatabase link: postgres://admin_user:Pass1234@db.techcorp.internal:5432/production_db\n\nAlso found this AWS credentials in their codebase:\nAKIAIOSFODNN7EXAMPLE\n\nThis is a huge score. I am selling the rest of the dumps for 2 BTC. Send to my wallet address: 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa\n\nThe eagle has landed. Order a pizza. Contact my vendors or check escrows."
+  },
+  {
+    "id": "cti_002",
+    "source": "dark_web_forum_alpha",
+    "language": "en",
+    "text": "Fresh CCs available. Verified and luhn passed.\nVisa details:\n4532 1234 5678 9012  Exp 12/26 Cvv 123 \nAlso grabbed some PII. John Doe SSN: 123-45-6789\nI accept ETH. Send payment to: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nHit me up on Telegram @DarkHack0xyz or ping my escrows for the fullz of 100k users. We used a zero day on DuckDuckGo and AcmeCorp. RDP access also available."
+  },
+  {
+    "id": "chat_003",
+    "source": "onion_chat_room",
+    "language": "en",
+    "text": "anyone got the stripe keys for globex corp? i have some fresh dumps we can trade. the cvv hit rate is over 80%. message me if you want to buy the exploit. price is 1.5 BTC."
+  }
+]

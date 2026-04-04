@@ -83,6 +83,50 @@
   animation: loaderSpin 1s linear infinite;
 }
 
+.spline-cta-wrap {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  display: flex;
+  gap: 10px;
+}
+
+.spline-enter-btn,
+.spline-skip-btn {
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  background: rgba(0, 10, 16, 0.78);
+  color: #bdf6ff;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.spline-enter-btn:hover,
+.spline-skip-btn:hover {
+  border-color: rgba(255, 0, 229, 0.45);
+  color: #ffe8fb;
+  box-shadow: 0 0 20px rgba(255, 0, 229, 0.2);
+}
+
+@media (max-width: 760px) {
+  .spline-cta-wrap {
+    flex-direction: column;
+    width: min(90vw, 320px);
+  }
+
+  .spline-enter-btn,
+  .spline-skip-btn {
+    width: 100%;
+  }
+}
+
 @keyframes loaderSpin {
   to { transform: rotate(360deg); }
 }

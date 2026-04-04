@@ -57,3 +57,13 @@ desktop.ini
 *.bak
 *.tmp
 *.swp
+
+# ─── Runtime persisted cache ──────────────────
+backend/data/ingest_cache.json
+backend/hs_site/
+backend/*_out.txt
+backend/*_err.txt
+backend/backend_log.txt
+backend/onion_test_url.txt
+onionshare_out.txt
+onionshare_err.txt

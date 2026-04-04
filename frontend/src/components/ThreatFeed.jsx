@@ -1,23 +1,36 @@
 import { useState, useEffect } from 'react';
 import { fetchThreatFeed } from '../api';
 import { IconSearch, IconCopy, IconZap } from './Icons';
-import { useToast } from './Toast';
+import { useToast } from './toast-context';
+import { timeAgo } from '../utils/time';
 
-export default function ThreatFeed() {
-  const [threats, setThreats] = useState([]);
-  const [filter, setFilter] = useState('ALL');
+const ALLOWED_FILTERS = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+
+export default function ThreatFeed({ initialSeverity }) {
+  const [threats, setThreats] = useState(null);
+  const [filter, setFilter] = useState(
+    ALLOWED_FILTERS.includes(initialSeverity) ? initialSeverity : 'ALL',
+  );
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [onlyNew, setOnlyNew] = useState(true);
   const toast = useToast();
+  const loading = threats === null;
 
   useEffect(() => {
-    fetchThreatFeed(50)
-      .then(d => setThreats(d.threats || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    let cancelled = false;
+    fetchThreatFeed(80, onlyNew, 240)
+      .then(d => {
+        if (!cancelled) setThreats(d.threats || []);
+      })
+      .catch(() => {
+        if (!cancelled) setThreats([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [onlyNew]);
 
-  const filtered = threats.filter(t => {
+  const filtered = (threats || []).filter(t => {
     if (filter !== 'ALL' && t.severity !== filter) return false;
     if (search && !(t.content || '').toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -28,7 +41,7 @@ export default function ThreatFeed() {
     navigator.clipboard.writeText(e).then(() => toast('Copied to clipboard', 'success'));
   };
 
-  const filters = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+  const filters = ALLOWED_FILTERS;
 
   return (
     <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -53,6 +66,16 @@ export default function ThreatFeed() {
               />
             </div>
             <div className="filter-chips">
+                <button
+                  className={`cyber-btn ghost ${onlyNew ? 'active' : ''}`}
+                  style={{ padding: '6px 12px', fontSize: '0.62rem' }}
+                  onClick={() => {
+                    setThreats(null);
+                    setOnlyNew(v => !v);
+                  }}
+                >
+                  {onlyNew ? 'NEW ONLY' : 'ALL UNIQUE'}
+                </button>
               {filters.map(f => (
                 <button
                   key={f}
@@ -84,12 +107,16 @@ export default function ThreatFeed() {
                   <div key={i} className={`threat-card glass-card ${severityClass(t.severity)}`}>
                     <div className="threat-card-head">
                       <span className={`badge ${severityClass(t.severity)}`}>{t.severity}</span>
-                      <span className="threat-timestamp">{t.source || 'dark-web'} · {t.timestamp || '2 min ago'}</span>
+                      <span className="threat-timestamp">{t.source || 'dark-web'} · {timeAgo(t.timestamp)}</span>
                     </div>
                     <div className="threat-card-body">
                       {t.content || t.text || 'Threat record'}
                     </div>
                     <div className="threat-card-meta">
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        {t.is_new ? <span className="badge low">NEW</span> : null}
+                        {(t.occurrences || 1) > 1 ? <span className="badge medium">Seen {t.occurrences}x</span> : null}
+                      </div>
                       {/* Entities */}
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flex: 1 }}>
                         {entities.slice(0, 4).map((e, j) => (

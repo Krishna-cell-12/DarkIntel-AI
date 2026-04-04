@@ -1,18 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 
 export function useCountUp(target, duration = 1200, delay = 0) {
-  const [value, setValue] = useState(0);
+  const normalizedTarget = typeof target === 'number' ? target : parseInt(target, 10) || 0;
+  const [value, setValue] = useState(normalizedTarget === 0 ? 0 : 0);
   const rafRef = useRef(null);
   const timerRef = useRef(null);
 
   useEffect(() => {
-    const t = typeof target === 'number' ? target : parseInt(target, 10) || 0;
+    const t = normalizedTarget;
     
     // Skip animation for 0 targets
-    if (t === 0) {
-      setValue(0);
-      return;
-    }
+    if (t === 0) return;
 
     // Clear any pending animations
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -37,7 +35,7 @@ export function useCountUp(target, duration = 1200, delay = 0) {
       if (timerRef.current) clearTimeout(timerRef.current);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [target, duration, delay]);
+  }, [normalizedTarget, duration, delay]);
 
   return value;
 }

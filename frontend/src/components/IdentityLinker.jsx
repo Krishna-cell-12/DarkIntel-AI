@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { fetchRecentIngest, linkIdentities } from '../api';
 import { IconLink, IconUser } from './Icons';
+import { useToast } from './toast-context';
 
 export default function IdentityLinker() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const toast = useToast();
 
   async function runLinking() {
     setLoading(true);
@@ -17,6 +19,11 @@ export default function IdentityLinker() {
       }));
       const linked = await linkIdentities(posts);
       setResult(linked);
+      if ((linked?.identity_profiles || []).length === 0) {
+        toast('No linked identities found in current dataset', 'info');
+      } else {
+        toast(`Linked ${linked.identity_profiles.length} identity profile(s)`, 'success');
+      }
     } finally {
       setLoading(false);
     }

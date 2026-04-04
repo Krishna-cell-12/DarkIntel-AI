@@ -15,6 +15,10 @@ import SlangDecoder from './components/SlangDecoder';
 import IdentityLinker from './components/IdentityLinker';
 import Analytics from './components/Analytics';
 import CompanyLookup from './components/CompanyLookup';
+import Alerts from './components/Alerts';
+
+const PARAMS = new URLSearchParams(window.location.search);
+const BYPASS_HERO = PARAMS.get('skipHero') === '1';
 
 // Console easter egg
 console.log(`
@@ -34,18 +38,28 @@ const PAGES = {
   identity: IdentityLinker,
   analytics: Analytics,
   company: CompanyLookup,
+  alerts: Alerts,
 };
 
 export default function App() {
-  const [showHero, setShowHero] = useState(true);
+  const [showHero, setShowHero] = useState(!BYPASS_HERO);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [connected, setConnected] = useState(false);
+  const [lastSync, setLastSync] = useState('—');
+  const [threatPreset, setThreatPreset] = useState('ALL');
 
   // Health check
   useEffect(() => {
     const check = () => {
       fetch('http://localhost:8000/api/health')
-        .then(r => { if (r.ok) setConnected(true); else setConnected(false); })
+        .then(r => {
+          if (r.ok) {
+            setConnected(true);
+            setLastSync(new Date().toLocaleTimeString('en-US', { hour12: false }));
+          } else {
+            setConnected(false);
+          }
+        })
         .catch(() => setConnected(false));
     };
     check();
@@ -62,6 +76,13 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  const handleNavigate = (tab, options = {}) => {
+    setActiveTab(tab);
+    if (tab === 'threats' && options?.severity) {
+      setThreatPreset(options.severity);
+    }
+  };
+
   const PageComponent = PAGES[activeTab] || Dashboard;
 
   return (
@@ -73,9 +94,13 @@ export default function App() {
           <LoadingScreen />
           <div className="app-background scanline">
             <div className="crt-lines" />
-            <Header activeTab={activeTab} onTabChange={setActiveTab} connected={connected} />
+            <Header activeTab={activeTab} onTabChange={setActiveTab} connected={connected} lastSync={lastSync} />
             <main className="main-content">
-              <PageComponent key={activeTab} />
+              <PageComponent
+                key={activeTab}
+                onNavigate={handleNavigate}
+                initialSeverity={activeTab === 'threats' ? threatPreset : undefined}
+              />
             </main>
             <Footer />
           </div>

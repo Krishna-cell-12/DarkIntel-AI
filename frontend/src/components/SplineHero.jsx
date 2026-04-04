@@ -27,6 +27,12 @@ export default function SplineHero({ onEnter }) {
           <div className="spline-loader-ring" />
         </div>
       </div>
+
+      <div className="spline-cta-wrap">
+        <button className="spline-enter-btn" onClick={triggerEnter}>Enter Terminal</button>
+        <button className="spline-skip-btn" onClick={triggerEnter}>Skip Intro</button>
+      </div>
+
       <iframe
         src="/spline-viewer.html"
         className={`spline-iframe ${loaded ? 'visible' : ''}`}

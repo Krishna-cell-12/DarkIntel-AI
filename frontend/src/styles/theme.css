@@ -282,6 +282,16 @@ ul, ol { list-style: none; }
   box-shadow: 0 4px 15px rgba(255, 0, 64, 0.2);
 }
 
+.cyber-btn.accent {
+  background: linear-gradient(135deg, #00d4aa 0%, #00a080 100%);
+  box-shadow: 0 4px 15px rgba(0, 212, 170, 0.2);
+}
+
+.cyber-btn.accent:hover {
+  box-shadow: 0 6px 25px rgba(0, 212, 170, 0.4);
+  transform: translateY(-2px);
+}
+
 .cyber-btn.outline {
   background: transparent;
   border: 1px solid var(--border);

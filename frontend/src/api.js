@@ -42,21 +42,62 @@ export async function fetchDashboardStats() {
    Returns: { threats: [{id, content, entities, threat_score, threat_level, slang_count}] }
    Frontend expects: severity, content, entities, threat_score, source, timestamp
    ══════════════════════════════════════════════════════════════ */
-export async function fetchThreatFeed(limit = 20) {
+export async function fetchThreatFeed(limit = 20, onlyNew = false, newWindowMinutes = 180) {
   try {
-    const data = await apiFetch(`/api/threats/feed?limit=${limit}`);
+    const data = await apiFetch(
+      `/api/threats/feed?limit=${limit}&only_new=${onlyNew ? 'true' : 'false'}&new_window_minutes=${newWindowMinutes}`,
+    );
     const threats = (data.threats || []).map((t, i) => ({
+      id: t.id || `threat_${i}`,
       severity: t.threat_level || 'LOW',
       content: t.content || t.full_content || '',
+      full_content: t.full_content || t.content || '',
       entities: _flattenEntities(t.entities),
       threat_score: t.threat_score || 0,
       source: t.source || 'unknown',
       timestamp: t.timestamp || new Date().toISOString(),
       slang_count: t.slang_count || 0,
+      is_new: !!t.is_new,
+      occurrences: Number(t.occurrences || 1),
     }));
     return { threats };
   } catch {
     return { threats: [] };
+  }
+}
+
+export async function fetchNewThreats(limit = 20, windowMinutes = 180) {
+  try {
+    const data = await apiFetch(`/api/threats/new?limit=${limit}&window_minutes=${windowMinutes}`);
+    const threats = (data.threats || []).map((t, i) => ({
+      id: t.id || `threat_${i}`,
+      severity: t.threat_level || 'LOW',
+      content: t.content || t.full_content || '',
+      full_content: t.full_content || t.content || '',
+      entities: _flattenEntities(t.entities),
+      threat_score: t.threat_score || 0,
+      source: t.source || 'unknown',
+      timestamp: t.timestamp || new Date().toISOString(),
+      slang_count: t.slang_count || 0,
+      is_new: !!t.is_new,
+      occurrences: Number(t.occurrences || 1),
+    }));
+    return { threats };
+  } catch {
+    return { threats: [] };
+  }
+}
+
+export async function fetchAlertsReport(limit = 20, minPriority = 'MEDIUM') {
+  try {
+    return await apiFetch(`/api/alerts?limit=${limit}&min_priority=${encodeURIComponent(minPriority)}`);
+  } catch {
+    return {
+      alerts: [],
+      total_alerts: 0,
+      distribution: { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 },
+      summary: 'Alerts unavailable.',
+    };
   }
 }
 
@@ -296,6 +337,47 @@ export async function fetchCrawlerResults(limit = 10) {
   }
 }
 
+export async function startMonitor(urls, interval_seconds = 120, tor_proxy = '127.0.0.1:9050', source_prefix = 'monitor') {
+  return await apiFetch('/api/monitor/start', {
+    method: 'POST',
+    body: JSON.stringify({ urls, interval_seconds, tor_proxy, source_prefix }),
+  });
+}
+
+export async function stopMonitor() {
+  return await apiFetch('/api/monitor/stop', { method: 'POST' });
+}
+
+export async function fetchMonitorStatus() {
+  try {
+    return await apiFetch('/api/monitor/status');
+  } catch {
+    return { running: false, last_error: 'Backend unavailable', ticks_completed: 0 };
+  }
+}
+
+export async function runMonitorTick(urls, tor_proxy = '127.0.0.1:9050') {
+  return await apiFetch('/api/monitor/tick', {
+    method: 'POST',
+    body: JSON.stringify({ urls, tor_proxy, timeout_seconds: 25, source_prefix: 'monitor' }),
+  });
+}
+
+export async function fetchWatchlist() {
+  try {
+    return await apiFetch('/api/watchlist');
+  } catch {
+    return { companies: [], domains: [], counts: { companies: 0, domains: 0 } };
+  }
+}
+
+export async function setWatchlist(companies = [], domains = []) {
+  return await apiFetch('/api/watchlist/set', {
+    method: 'POST',
+    body: JSON.stringify({ companies, domains }),
+  });
+}
+
 export async function fetchRecentIngest(limit = 120) {
   try {
     return await apiFetch(`/api/ingest/recent?limit=${limit}`);
@@ -322,6 +404,31 @@ export async function fetchEarlyWarning() {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════
+   Auto-Correlation Pipeline
+   Backend: POST /api/correlate/auto  (body: { text })
+   Runs: Leak Detection → Auto-Ingest → Correlation → Alerts
+   ══════════════════════════════════════════════════════════════ */
+export async function runAutoCorrelation(text) {
+  try {
+    return await apiFetch('/api/correlate/auto', {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+  } catch {
+    return {
+      pipeline: 'auto_correlate',
+      input_severity: 'LOW',
+      total_leaks_detected: 0,
+      auto_ingested: false,
+      leaks: {},
+      impact: {},
+      correlation: { total_correlations: 0, signals: [], summary: 'Pipeline failed.' },
+      alerts: { total_alerts: 0, distribution: {}, top_alerts: [], summary: '' },
+    };
+  }
+}
+
 export async function ingestFile(file, source = 'file_upload', language = 'unknown') {
   const body = new FormData();
   body.append('file', file);
@@ -334,6 +441,13 @@ export async function ingestFile(file, source = 'file_upload', language = 'unkno
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return await res.json();
+}
+
+export async function ingestFilePath(path, source = 'file_path_ingest', language = 'unknown') {
+  return await apiFetch('/api/ingest/file-path', {
+    method: 'POST',
+    body: JSON.stringify({ path, source, language }),
+  });
 }
 
 export async function ingestUrl(url, source = 'url_fetch') {

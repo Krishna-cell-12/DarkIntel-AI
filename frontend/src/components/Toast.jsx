@@ -1,11 +1,6 @@
-import { createContext, useContext, useState, useCallback, useRef } from 'react';
-import { IconCheck, IconAlert, IconX } from './Icons';
-
-const ToastContext = createContext(null);
-
-export function useToast() {
-  return useContext(ToastContext);
-}
+import { useState, useCallback, useRef } from 'react';
+import { IconCheck, IconAlert } from './Icons';
+import { ToastContext } from './toast-context';
 
 let toastId = 0;
 

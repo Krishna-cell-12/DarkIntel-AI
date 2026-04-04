@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { decodeSlang } from '../api';
-import { useToast } from './Toast';
+import { useToast } from './toast-context';
 import { IconKey, IconSearch } from './Icons';
 
 export default function SlangDecoder() {
@@ -21,15 +21,7 @@ export default function SlangDecoder() {
     try {
       const data = await decodeSlang(text);
       setResults(data);
-      // Build decoded text with highlights
-      let out = text;
-      if (data.decoded_terms) {
-        data.decoded_terms.forEach(t => {
-          const regex = new RegExp(`\\b${t.original || t.term}\\b`, 'gi');
-          out = out.replace(regex, `[${t.translation || t.meaning}]`);
-        });
-      }
-      setDecoded(out);
+      setDecoded(text);
       toast(`Decoded ${data.decoded_terms?.length || 0} slang terms`, 'success');
     } catch {
       toast('Decode failed — backend offline', 'error');
@@ -145,21 +137,50 @@ export default function SlangDecoder() {
 function DecodedText({ text, terms }) {
   if (!terms || terms.length === 0) return <span>{text}</span>;
 
-  // Simple approach: split by brackets
-  const parts = text.split(/(\[.*?\])/g);
+  // Highlight matched slang terms directly in output text.
+  let chunks = [{ text, highlighted: false, meaning: null }];
+
+  const uniqueTerms = terms
+    .map(t => ({
+      raw: String(t.original || t.term || '').trim(),
+      meaning: String(t.translation || t.meaning || '').trim(),
+    }))
+    .filter(t => t.raw.length > 0);
+
+  uniqueTerms.forEach(term => {
+    const escaped = term.raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`\\b${escaped}\\b`, 'gi');
+
+    chunks = chunks.flatMap(chunk => {
+      if (chunk.highlighted) return [chunk];
+      const parts = [];
+      let last = 0;
+      let match;
+      while ((match = re.exec(chunk.text)) !== null) {
+        if (match.index > last) {
+          parts.push({ text: chunk.text.slice(last, match.index), highlighted: false, meaning: null });
+        }
+        parts.push({ text: chunk.text.slice(match.index, match.index + match[0].length), highlighted: true, meaning: term.meaning });
+        last = match.index + match[0].length;
+      }
+      if (last < chunk.text.length) {
+        parts.push({ text: chunk.text.slice(last), highlighted: false, meaning: null });
+      }
+      return parts.length ? parts : [chunk];
+    });
+  });
+
   return (
     <>
-      {parts.map((part, i) => {
-        if (part.startsWith('[') && part.endsWith(']')) {
-          const inner = part.slice(1, -1);
-          return (
-            <span key={i} className="slang-highlight" title={inner}>
-              [{inner}]
-            </span>
-          );
-        }
-        return <span key={i}>{part}</span>;
-      })}
+      {chunks.map((chunk, i) => (
+        chunk.highlighted ? (
+          <span key={i} className="slang-highlight" title={chunk.meaning || 'Decoded slang'}>
+            {chunk.text}
+          </span>
+        ) : (
+          <span key={i}>{chunk.text}</span>
+        )
+      ))}
     </>
   );
 }

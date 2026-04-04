@@ -168,16 +168,77 @@ def _json_to_text(raw: str) -> str:
 
     parts: list[str] = []
 
+    def _render_scalar(v: Any) -> str:
+        if v is None:
+            return ""
+        if isinstance(v, bool):
+            return "true" if v else "false"
+        return str(v)
+
     def visit(node: Any) -> None:
-        if isinstance(node, dict):
-            for key, value in node.items():
-                parts.append(str(key))
-                visit(value)
-        elif isinstance(node, list):
+        if isinstance(node, list):
+            if all(isinstance(item, dict) for item in node):
+                for item in node:
+                    text = _dict_to_line(item)
+                    if text:
+                        parts.append(text)
+                return
             for item in node:
                 visit(item)
-        else:
-            parts.append(str(node))
+            return
+
+        if isinstance(node, dict):
+            line = _dict_to_line(node)
+            if line:
+                parts.append(line)
+            return
+
+        scalar = _render_scalar(node).strip()
+        if scalar:
+            parts.append(scalar)
+
+    def _dict_to_line(d: dict[str, Any]) -> str:
+        preferred_keys = [
+            "text",
+            "content",
+            "message",
+            "body",
+            "description",
+            "title",
+            "summary",
+            "source",
+            "language",
+        ]
+        chunks: list[str] = []
+        seen: set[str] = set()
+
+        for key in preferred_keys:
+            if key not in d:
+                continue
+            value = _render_scalar(d.get(key)).strip()
+            if not value:
+                continue
+            token = f"{key}: {value}"
+            if token in seen:
+                continue
+            seen.add(token)
+            chunks.append(token)
+
+        for key, value in d.items():
+            if key in preferred_keys:
+                continue
+            if isinstance(value, (dict, list)):
+                continue
+            value_text = _render_scalar(value).strip()
+            if not value_text:
+                continue
+            token = f"{key}: {value_text}"
+            if token in seen:
+                continue
+            seen.add(token)
+            chunks.append(token)
+
+        return " | ".join(chunks)
 
     visit(obj)
     return "\n".join(parts)

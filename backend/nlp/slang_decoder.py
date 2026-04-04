@@ -85,17 +85,77 @@ SLANG_DICTIONARY: dict[str, str] = {
 
 # Non-English slang aliases mapped to existing meanings
 MULTILINGUAL_ALIASES: dict[str, str] = {
-    # Russian
+    # Russian dark web slang
     "свежие": "fresh",
     "логи": "logs",
     "фулз": "fullz",
     "кардинг": "carding",
-    # Spanish
+    "дампы": "dumps",
+    "комбо": "combos",
+    "слив": "dumps",  # leak/dump
+    "малварь": "rat",  # malware
+    "ботнет": "botnet",
+    "крипт": "crypter",
+    "эксплоит": "exploit kit",
+    "шелл": "shell",
+    "бэкдор": "backdoor",
+    "рансом": "locker",  # ransomware
+    "биткойн": "cashout",
+    "дроп": "drop",
+    "обнал": "cashout",  # cashing out
+    "пробив": "dehashed",  # database lookup
+    "база": "dumps",  # database
+    "аккаунты": "logs",  # accounts
+    "пароли": "combos",  # passwords
+    "куки": "cookies",
+    "прокси": "proxy",
+    "впн": "vpn",
+    "тор": "tor",
+    # Chinese dark web slang (Pinyin and characters)
+    "数据": "dumps",  # data
+    "密码": "combos",  # passwords
+    "账号": "logs",  # accounts
+    "信用卡": "cc",  # credit card
+    "身份证": "fullz",  # ID card / identity
+    "黑客": "shell",  # hacker
+    "木马": "rat",  # trojan
+    "病毒": "payload",  # virus
+    "漏洞": "zero day",  # vulnerability
+    "肉鸡": "botnet",  # compromised hosts ("meat chickens")
+    "挖矿": "crypter",  # mining (cryptominer)
+    "代理": "proxy",  # proxy
+    "洗钱": "cashout",  # money laundering
+    "诈骗": "ripper",  # fraud/scam
+    "钓鱼": "payload",  # phishing
+    "社工": "fullz",  # social engineering
+    "暗网": "tor",  # dark web
+    "比特币": "cashout",  # bitcoin
+    # Spanish dark web slang
     "credenciales": "logs",
     "tarjetas": "cc",
-    # French
+    "contraseñas": "combos",
+    "datos robados": "dumps",
+    "cuentas": "logs",
+    "billetera": "cashout",
+    "estafa": "ripper",
+    "hackeo": "shell",
+    # French dark web slang
     "identites completes": "fullz",
     "cartes volees": "cc dumps",
+    "mots de passe": "combos",
+    "donnees volees": "dumps",
+    "comptes": "logs",
+    "piratage": "shell",
+    # Portuguese dark web slang
+    "senhas": "combos",
+    "cartoes": "cc",
+    "contas": "logs",
+    "vazamento": "dumps",  # leak
+    # German dark web slang
+    "passwörter": "combos",
+    "kreditkarten": "cc",
+    "konten": "logs",
+    "datenleck": "dumps",
 }
 
 # Compile regex patterns for efficient matching
