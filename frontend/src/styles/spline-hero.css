@@ -1,0 +1,88 @@
+/* ═══════════════════════════════════════════════════════════════
+   SPLINE HERO — Full-screen 3D landing section
+   ═══════════════════════════════════════════════════════════════ */
+
+.spline-hero {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #0a0a0f;
+  overflow: hidden;
+  animation: heroFadeIn 0.6s ease-out;
+}
+
+@keyframes heroFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Spline Iframe ─────────────────────────────────────────── */
+.spline-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  opacity: 0;
+  transition: opacity 1.2s ease-out;
+}
+
+.spline-iframe.visible {
+  opacity: 1;
+}
+
+/* ── Spline Canvas (React component fallback) ──────────────── */
+.spline-canvas {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.2s ease-out;
+}
+
+.spline-canvas.visible {
+  opacity: 1;
+}
+
+.spline-canvas canvas,
+.spline-canvas > div {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── Loading Overlay ───────────────────────────────────────── */
+.spline-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0a0f;
+  transition: opacity 0.8s ease-out, visibility 0.8s;
+}
+
+.spline-loader.loaded {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.spline-loader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.spline-loader-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid rgba(0, 240, 255, 0.1);
+  border-top-color: #00F0FF;
+  animation: loaderSpin 1s linear infinite;
+}
+
+@keyframes loaderSpin {
+  to { transform: rotate(360deg); }
+}
