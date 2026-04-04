@@ -683,25 +683,6 @@
   to   { opacity: 0; transform: translateX(30px); }
 }
 
-/* ── Demo Badge ─────────────────────────────────────────────────── */
-.demo-badge {
-  position: fixed; bottom: 16px; right: 16px;
-  padding: 6px 14px;
-  background: rgba(255, 107, 0, 0.1);
-  border: 1px solid rgba(255, 107, 0, 0.25);
-  border-radius: 20px;
-  font-family: var(--font-mono);
-  font-size: 0.6rem; font-weight: 700;
-  color: var(--orange);
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  cursor: pointer;
-  z-index: 100;
-  transition: all var(--duration) var(--ease);
-}
-
-.demo-badge:hover { background: rgba(255, 107, 0, 0.15); }
-
 /* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 1200px) {
   .stats-grid { grid-template-columns: repeat(3, 1fr); }
@@ -718,4 +699,168 @@
 @media (max-width: 600px) {
   .stats-grid { grid-template-columns: 1fr; }
   .main-content { padding: 14px; }
+}
+
+/* ── Company Lookup ─────────────────────────────────────────────── */
+.company-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.company-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.company-crawl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.company-crawl-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.015);
+}
+
+.company-status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-dim);
+  padding: 6px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255,255,255,0.02);
+}
+
+.company-status-item strong {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.company-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--high);
+  background: rgba(255,107,0,0.08);
+  border: 1px solid rgba(255,107,0,0.2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 0.72rem;
+}
+
+.company-tip {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  background: rgba(0,240,255,0.06);
+  border: 1px solid rgba(0,240,255,0.18);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.company-tip code {
+  font-family: var(--font-mono);
+  color: var(--cyan);
+}
+
+.company-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.company-kpi {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.02);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.company-kpi span {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.company-kpi strong {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  color: var(--cyan);
+}
+
+.company-evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.company-evidence-item {
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--cyan);
+  background: rgba(255,255,255,0.015);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.company-evidence-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.company-evidence-body {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.company-reco-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.company-reco-item {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.empty-state {
+  padding: 14px 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.02);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+
+@media (max-width: 900px) {
+  .company-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .company-upload-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

@@ -4,7 +4,7 @@
  * Connects frontend components to the FastAPI backend.
  * Each function calls the REAL backend endpoint and transforms
  * the response to the format the UI components expect.
- * Falls back to demo data ONLY if the backend is unreachable.
+ * Uses real backend data only. No synthetic fallback payloads.
  */
 
 const BASE = 'http://localhost:8000';
@@ -27,10 +27,11 @@ export async function fetchDashboardStats() {
     return await apiFetch('/api/dashboard/stats');
   } catch {
     return {
-      total_threats_analyzed: 1247,
-      total_entities_extracted: 3891,
-      modules_active: 5,
-      threat_distribution: { CRITICAL: 23, HIGH: 67, MEDIUM: 156, LOW: 89 },
+      total_threats_analyzed: 0,
+      total_entities_extracted: 0,
+      modules_active: 8,
+      threat_distribution: { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 },
+      status: 'degraded',
     };
   }
 }
@@ -44,19 +45,18 @@ export async function fetchDashboardStats() {
 export async function fetchThreatFeed(limit = 20) {
   try {
     const data = await apiFetch(`/api/threats/feed?limit=${limit}`);
-    // Transform backend format → frontend format
     const threats = (data.threats || []).map((t, i) => ({
       severity: t.threat_level || 'LOW',
       content: t.content || t.full_content || '',
       entities: _flattenEntities(t.entities),
       threat_score: t.threat_score || 0,
-      source: _pickSource(i),
-      timestamp: _relativeTime(i),
+      source: t.source || 'unknown',
+      timestamp: t.timestamp || new Date().toISOString(),
       slang_count: t.slang_count || 0,
     }));
     return { threats };
   } catch {
-    return { threats: _demoThreats() };
+    return { threats: [] };
   }
 }
 
@@ -138,7 +138,23 @@ export async function scanLeaks(text) {
       },
     };
   } catch {
-    return _demoLeakResults();
+    return {
+      total_findings: 0,
+      overall_severity: 'LOW',
+      credentials: [],
+      financial: [],
+      api_keys: [],
+      crypto_wallets: [],
+      impact: {
+        estimated_affected_users: '—',
+        business_risk: 'LOW',
+        data_types: [],
+        recommendations: [],
+        financial_exposure: '',
+        risk_score: 0,
+        summary: '',
+      },
+    };
   }
 }
 
@@ -169,18 +185,10 @@ export async function decodeSlang(text) {
     };
   } catch {
     return {
-      decoded_terms: [
-        { original: 'logs', translation: 'stolen login credentials' },
-        { original: 'fullz', translation: 'complete identity data package' },
-        { original: 'carding', translation: 'credit card fraud techniques' },
-        { original: 'rats', translation: 'remote access trojans' },
-        { original: 'doxing', translation: 'exposing personal information' },
-        { original: 'drops', translation: 'money mule receiving locations' },
-        { original: 'mules', translation: 'people who transfer stolen money' },
-        { original: 'exploit kits', translation: 'packaged software vulnerability tools' },
-        { original: 'zero days', translation: 'unknown/unpatched vulnerabilities' },
-      ],
-      risk_score_boost: 35,
+      decoded_terms: [],
+      risk_score_boost: 0,
+      decoded_text: text,
+      slang_count: 0,
     };
   }
 }
@@ -247,6 +255,101 @@ export async function fetchDashboardData() {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   Company Breach Lookup + Tor Crawler
+   ══════════════════════════════════════════════════════════════ */
+export async function lookupCompanyRisk(name) {
+  try {
+    const n = encodeURIComponent((name || '').trim());
+    return await apiFetch(`/api/company/lookup?name=${n}`);
+  } catch {
+    return {
+      company: name || '',
+      overall_risk: 'LOW',
+      breach_evidence: [],
+      risk_indicators: { matches: 0 },
+      summary: 'Lookup unavailable. Backend may be offline.',
+      recommendations: [],
+    };
+  }
+}
+
+export async function startTorCrawler(urls = [], tor_proxy = '127.0.0.1:9050') {
+  return await apiFetch('/api/crawler/start', {
+    method: 'POST',
+    body: JSON.stringify({ urls, tor_proxy, timeout_seconds: 25 }),
+  });
+}
+
+export async function fetchCrawlerStatus() {
+  try {
+    return await apiFetch('/api/crawler/status');
+  } catch {
+    return { status: 'unknown', tor_connected: false, last_error: 'Backend unavailable' };
+  }
+}
+
+export async function fetchCrawlerResults(limit = 10) {
+  try {
+    return await apiFetch(`/api/crawler/results?limit=${limit}`);
+  } catch {
+    return { count: 0, total: 0, items: [] };
+  }
+}
+
+export async function fetchRecentIngest(limit = 120) {
+  try {
+    return await apiFetch(`/api/ingest/recent?limit=${limit}`);
+  } catch {
+    return { count: 0, items: [], total_buffered: 0 };
+  }
+}
+
+export async function fetchEarlyWarning() {
+  try {
+    return await apiFetch('/api/analytics/early-warning');
+  } catch {
+    return {
+      warning_level: 'LOW',
+      current_window_records: 0,
+      previous_window_records: 0,
+      surge_ratio: 0,
+      high_risk_current: 0,
+      high_risk_previous: 0,
+      critical_current: 0,
+      top_companies: [],
+      summary: 'No early-warning data yet.',
+    };
+  }
+}
+
+export async function ingestFile(file, source = 'file_upload', language = 'unknown') {
+  const body = new FormData();
+  body.append('file', file);
+  body.append('source', source);
+  body.append('language', language);
+
+  const res = await fetch(`${BASE}/api/ingest/file`, {
+    method: 'POST',
+    body,
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+}
+
+export async function ingestUrl(url, source = 'url_fetch') {
+  const body = new FormData();
+  body.append('url', url);
+  body.append('source', source);
+
+  const res = await fetch(`${BASE}/api/ingest/url`, {
+    method: 'POST',
+    body,
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+}
+
+/* ══════════════════════════════════════════════════════════════
    Helpers
    ══════════════════════════════════════════════════════════════ */
 
@@ -259,68 +362,8 @@ function _flattenEntities(entities) {
   return flat;
 }
 
-function _pickSource(idx) {
-  const sources = ['darkmarket.onion', 'breachforums', 'telegram', 'raid.io', 'paste.onion', 'exploit.in'];
-  return sources[idx % sources.length];
-}
-
-function _relativeTime(idx) {
-  const mins = [2, 5, 8, 12, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
-  return `${mins[idx % mins.length]} min ago`;
-}
-
 function _maxSeverity(levels) {
   const order = { LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 };
   if (!levels.length) return 'LOW';
   return levels.reduce((mx, lv) => (order[lv] || 0) > (order[mx] || 0) ? lv : mx, 'LOW');
-}
-
-function _demoThreats() {
-  return [
-    { severity: 'CRITICAL', content: 'Selling fresh fullz + logs from Fortune 500 breach — includes SSN, DOB, full credit reports', entities: ['0x742d...f44e', 'admin@corp.com'], threat_score: 92, source: 'darkmarket.onion', timestamp: '2 min ago' },
-    { severity: 'HIGH', content: 'New ransomware variant targeting healthcare sector — encrypts DICOM imaging files', entities: ['192.168.1.1', 'attacker@proton.me'], threat_score: 78, source: 'breachforums', timestamp: '5 min ago' },
-    { severity: 'CRITICAL', content: 'Zero-day exploit for Cisco ASA firewall — pre-auth RCE, working PoC included', entities: ['CVE-2026-1234', 'exploit@onion.mail'], threat_score: 95, source: 'raid.io', timestamp: '8 min ago' },
-    { severity: 'MEDIUM', content: 'Bulk email:password combo list — 2.3M entries from various breaches, deduplicated', entities: ['combo-list-2026.txt'], threat_score: 54, source: 'telegram', timestamp: '12 min ago' },
-    { severity: 'HIGH', content: 'Insider offering AWS root credentials for Fortune 100 company infrastructure', entities: ['AKIAIOSFODNN7...', 'insider@corp.com'], threat_score: 88, source: 'darkmarket.onion', timestamp: '15 min ago' },
-    { severity: 'LOW', content: 'Tutorial — how to set up phishing pages with Evilginx and Cloudflare bypass', entities: ['evilginx-setup.zip'], threat_score: 32, source: 'telegram', timestamp: '20 min ago' },
-    { severity: 'HIGH', content: 'Database dump from e-commerce platform — 500K customer records with payment info', entities: ['shopDB.sql', 'admin@shop.io'], threat_score: 81, source: 'breachforums', timestamp: '25 min ago' },
-    { severity: 'CRITICAL', content: 'Banking trojan source code with real-time card skimmer and C2 infrastructure', entities: ['trojan_v3.zip', 'c2.darkhost.onion'], threat_score: 96, source: 'darkmarket.onion', timestamp: '30 min ago' },
-    { severity: 'MEDIUM', content: 'Leaked corporate VPN credentials for tech company — OpenVPN profiles included', entities: ['vpn.techcorp.com', 'user@techcorp.com'], threat_score: 62, source: 'paste.onion', timestamp: '35 min ago' },
-    { severity: 'HIGH', content: 'Offering DDoS-for-hire services — 1Tbps capacity with custom payloads', entities: ['ddos@proton.me', 'bc1qxy2kgd...'], threat_score: 74, source: 'darkmarket.onion', timestamp: '45 min ago' },
-  ];
-}
-
-function _demoLeakResults() {
-  return {
-    total_findings: 9,
-    overall_severity: 'CRITICAL',
-    credentials: [
-      { type: 'EMAIL:PASSWORD', value: 'admin@techcorp.com:AdminPass123', masked_value: 'admin@techcorp.com:Admin****', severity: 'HIGH', context: 'Found in database dump' },
-      { type: 'EMAIL:PASSWORD', value: 'john.doe@company.org:SecretKey456', masked_value: 'john.doe@company.org:Secr****', severity: 'HIGH', context: 'Found in database dump' },
-      { type: 'EMAIL:PASSWORD', value: 'support@acme.io:Welcome2024!', masked_value: 'support@acme.io:Welc****', severity: 'HIGH', context: 'Found in database dump' },
-    ],
-    financial: [
-      { type: 'CREDIT_CARD', card_type: 'Visa', value: '4532-1234-5678-9010', masked_value: '4532 **** **** 9010', severity: 'CRITICAL', luhn_valid: true, context: 'CVV: 123, Exp: 12/25' },
-      { type: 'CREDIT_CARD', card_type: 'Visa', value: '4111111111111111', masked_value: '4111 **** **** 1111', severity: 'CRITICAL', luhn_valid: true, context: 'CVV: 999' },
-    ],
-    api_keys: [
-      { type: 'AWS_ACCESS_KEY', value: 'AKIAIOSFODNN7EXAMPLE', masked_value: 'AKIA****MPLE', severity: 'CRITICAL', context: 'Cloud key exposed' },
-      { type: 'AWS_ACCESS_KEY', value: 'AKIA5EXAMPLE9KEYHERE', masked_value: 'AKIA****HERE', severity: 'CRITICAL', context: 'Cloud key exposed' },
-    ],
-    crypto_wallets: [
-      { type: 'ETH_WALLET', value: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e', masked_value: '0x742d...f44e', severity: 'HIGH', context: 'Ethereum wallet' },
-      { type: 'BTC_WALLET', value: 'bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq', masked_value: 'bc1qar0...5mdq', severity: 'HIGH', context: 'Bitcoin wallet' },
-    ],
-    impact: {
-      estimated_affected_users: '4,200+',
-      business_risk: 'HIGH',
-      data_types: ['credentials', 'financial', 'crypto', 'api_keys'],
-      recommendations: [
-        'Immediately revoke all exposed API keys and rotate credentials',
-        'Issue fraud alerts for exposed credit card numbers',
-        'Monitor cryptocurrency wallets for unauthorized transactions',
-        'Notify affected users and enforce mandatory password resets',
-      ],
-    },
-  };
 }

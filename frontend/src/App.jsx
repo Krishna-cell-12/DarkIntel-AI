@@ -14,6 +14,7 @@ import LeakDetector from './components/LeakDetector';
 import SlangDecoder from './components/SlangDecoder';
 import IdentityLinker from './components/IdentityLinker';
 import Analytics from './components/Analytics';
+import CompanyLookup from './components/CompanyLookup';
 
 // Console easter egg
 console.log(`
@@ -32,13 +33,13 @@ const PAGES = {
   slang: SlangDecoder,
   identity: IdentityLinker,
   analytics: Analytics,
+  company: CompanyLookup,
 };
 
 export default function App() {
   const [showHero, setShowHero] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [connected, setConnected] = useState(false);
-  const [demoBadge, setDemoBadge] = useState(true);
 
   // Health check
   useEffect(() => {
@@ -77,11 +78,6 @@ export default function App() {
               <PageComponent key={activeTab} />
             </main>
             <Footer />
-            {demoBadge && (
-              <div className="demo-badge" onClick={() => setDemoBadge(false)}>
-                ● Demo Mode
-              </div>
-            )}
           </div>
         </>
       )}

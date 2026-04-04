@@ -3,8 +3,6 @@ import { decodeSlang } from '../api';
 import { useToast } from './Toast';
 import { IconKey, IconSearch } from './Icons';
 
-const SAMPLE_TEXT = 'Selling fresh logs and fullz from latest breach. Got CC dumps, carding tutorials, and quality rats for sale. DM for prices. Also doxing services available. Looking for reliable drops and mules. Can provide exploit kits and zero days.';
-
 export default function SlangDecoder() {
   const [input, setInput] = useState('');
   const [results, setResults] = useState(null);
@@ -14,8 +12,11 @@ export default function SlangDecoder() {
   const toast = useToast();
 
   const doDecode = async () => {
-    const text = input.trim() || SAMPLE_TEXT;
-    if (!input.trim()) setInput(SAMPLE_TEXT);
+    const text = input.trim();
+    if (!text) {
+      toast('Enter real intercepted text to decode', 'info');
+      return;
+    }
     setLoading(true);
     try {
       const data = await decodeSlang(text);
@@ -75,9 +76,6 @@ export default function SlangDecoder() {
               <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
                 <button className="cyber-btn primary" onClick={doDecode} disabled={loading} style={{ background: 'linear-gradient(135deg, var(--magenta), #8800cc)' }}>
                   {loading ? 'Decoding...' : '↻ Decode Message'}
-                </button>
-                <button className="cyber-btn ghost" onClick={() => setInput(SAMPLE_TEXT)}>
-                  Load Sample
                 </button>
               </div>
             </div>

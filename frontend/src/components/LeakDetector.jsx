@@ -4,25 +4,6 @@ import { useToast } from './Toast';
 import { IconSearch, IconTrash, IconDatabase, IconLock, IconKey, IconCreditCard, IconCopy } from './Icons';
 import { useCountUp } from '../hooks/useCountUp';
 
-const SAMPLE_TEXT = `Found this dump on darknet marketplace:
-admin@techcorp.com:AdminPass123
-john.doe@company.org|SecretKey456
-support@acme.io:Welcome2024!
-
-Payment info leaked:
-4532-1234-5678-9010 CVV: 123 Exp: 12/25
-4111111111111111 CVV: 999
-
-Cloud keys exposed:
-AKIAIOSFODNN7EXAMPLE
-AKIA5EXAMPLE9KEYHERE
-
-Crypto wallets:
-0x742d35Cc6634C0532925a3b844Bc454e4438f44e
-bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq
-
-SSN found: 078-05-1120`;
-
 export default function LeakDetector() {
   const [input, setInput] = useState('');
   const [results, setResults] = useState(null);
@@ -30,8 +11,11 @@ export default function LeakDetector() {
   const toast = useToast();
 
   const doScan = async () => {
-    const text = input.trim() || SAMPLE_TEXT;
-    if (!input.trim()) setInput(SAMPLE_TEXT);
+    const text = input.trim();
+    if (!text) {
+      toast('Paste real suspicious content to scan', 'info');
+      return;
+    }
     setScanning(true);
     setResults(null);
     try {
@@ -102,9 +86,6 @@ export default function LeakDetector() {
             </button>
             <button className="cyber-btn outline" onClick={() => { setInput(''); setResults(null); }}>
               <IconTrash style={{ width: 14, height: 14 }} /> Clear
-            </button>
-            <button className="cyber-btn ghost" onClick={() => setInput(SAMPLE_TEXT)}>
-              Load Sample
             </button>
           </div>
         </div>

@@ -73,7 +73,7 @@ export default function ThreatFeed() {
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', fontSize: '0.82rem' }}>
-              No threats match your filter
+              No real threats match your filter. Ingest data or run Tor crawl.
             </div>
           ) : (
             <div className="threat-list stagger-children">
@@ -87,7 +87,7 @@ export default function ThreatFeed() {
                       <span className="threat-timestamp">{t.source || 'dark-web'} · {t.timestamp || '2 min ago'}</span>
                     </div>
                     <div className="threat-card-body">
-                      {t.content || t.text || 'Threat data intercepted from dark web marketplace'}
+                      {t.content || t.text || 'Threat record'}
                     </div>
                     <div className="threat-card-meta">
                       {/* Entities */}

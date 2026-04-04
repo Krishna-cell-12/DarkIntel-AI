@@ -98,7 +98,7 @@ function LiveFeed({ threats }) {
       >
         <div className="stagger-children" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {(!threats || threats.length === 0) ? (
-            <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>No threats intercepted</div>
+            <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>No real threats ingested yet</div>
           ) : threats.map((t, i) => (
             <div
               key={i}
@@ -132,13 +132,23 @@ function LiveFeed({ threats }) {
 }
 
 /* ── Mini Network Viz ────────────────────────────────────────── */
-function MiniNetwork() {
+function MiniNetwork({ threats }) {
+  const entitySet = new Set();
+  (threats || []).forEach(t => {
+    (t.entities || []).forEach(e => {
+      if (typeof e === 'string' && e.trim()) entitySet.add(e.trim());
+    });
+  });
+  const labels = Array.from(entitySet).slice(0, 5);
+  const fallback = ['No entities', 'Ingest data', 'Run crawl', 'Correlate', 'Alerts'];
+  const used = labels.length > 0 ? labels : fallback;
+
   const nodes = [
-    { x: 80, y: 60, label: 'ShadowViper', color: 'var(--critical)', r: 18 },
-    { x: 230, y: 50, label: 'NullByte', color: 'var(--high)', r: 15 },
-    { x: 155, y: 150, label: 'DarkMerchant', color: 'var(--cyan)', r: 16 },
-    { x: 310, y: 130, label: 'admin@corp', color: 'var(--magenta)', r: 12 },
-    { x: 60, y: 180, label: '0x742d...', color: 'var(--low)', r: 12 },
+    { x: 80, y: 60, label: used[0] || 'node-1', color: 'var(--critical)', r: 18 },
+    { x: 230, y: 50, label: used[1] || 'node-2', color: 'var(--high)', r: 15 },
+    { x: 155, y: 150, label: used[2] || 'node-3', color: 'var(--cyan)', r: 16 },
+    { x: 310, y: 130, label: used[3] || 'node-4', color: 'var(--magenta)', r: 12 },
+    { x: 60, y: 180, label: used[4] || 'node-5', color: 'var(--low)', r: 12 },
   ];
   const edges = [[0,2],[1,2],[2,3],[0,4],[1,3]];
 
@@ -178,7 +188,10 @@ export default function Dashboard() {
         ]);
         setStats(s);
         setThreats(f.threats || []);
-      } catch (e) { /* demo mode */ }
+      } catch (e) {
+        setStats(null);
+        setThreats([]);
+      }
       setLoading(false);
     }
     load();
@@ -186,7 +199,7 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, []);
 
-  const dist = stats?.threat_distribution || { CRITICAL: 0, HIGH: 0, MEDIUM: 30, LOW: 20 };
+  const dist = stats?.threat_distribution || { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
 
   return (
     <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -202,10 +215,15 @@ export default function Dashboard() {
               <IconZap style={{ width: 14, height: 14, color: 'var(--critical)' }} />
               Recent Threats
             </span>
-            <span className="card-header-badge">{threats.length} intercepted</span>
+            <span className="card-header-badge">{threats.length} real records</span>
           </div>
           <div className="card-body">
             <LiveFeed threats={threats} />
+            {!loading && threats.length === 0 ? (
+              <div className="empty-state" style={{ marginTop: 12 }}>
+                No real threat data yet. Run Tor crawl or ingest files/URLs to start monitoring.
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -233,7 +251,7 @@ export default function Dashboard() {
               </span>
             </div>
             <div className="card-body" style={{ padding: '12px 8px' }}>
-              <MiniNetwork />
+              <MiniNetwork threats={threats} />
             </div>
           </div>
         </div>

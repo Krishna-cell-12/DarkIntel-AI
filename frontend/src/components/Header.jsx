@@ -7,6 +7,7 @@ const TABS = [
   { id: 'slang',     label: 'Slang Decoder' },
   { id: 'identity',  label: 'Identity Linker' },
   { id: 'analytics', label: 'Analytics' },
+  { id: 'company', label: 'Company Lookup' },
 ];
 
 export default function Header({ activeTab, onTabChange, connected }) {
