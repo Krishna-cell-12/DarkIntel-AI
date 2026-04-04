@@ -8,3 +8,7 @@ langdetect>=1.0.9
 deep-translator>=1.11.4
 beautifulsoup4>=4.12.3
 pysocks>=1.7.1
+python-multipart>=0.0.9
+pypdf>=4.2.0
+pytesseract>=0.3.10
+Pillow>=10.3.0

@@ -6,7 +6,7 @@ Single FastAPI application that serves ALL modules:
   - Leak Detection (credentials, financial, API keys, crypto wallets)
   - Impact Estimation (users affected, business risk)
   - Identity Linking (cross-platform actor profiles)
-  - Dashboard data (stats, threat feed, demo data)
+  - Dashboard data (stats, threat feed, real-time monitoring)
 
 Run:
     python server.py
@@ -15,7 +15,6 @@ Run:
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import sys
@@ -25,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -55,11 +54,12 @@ from leak_detection.identity_linker import link_identities
 from alerts.alert_engine import build_prioritized_alerts
 from analytics.company_lookup import build_company_risk_report
 from correlation.signal_correlator import correlate_sources
-from crawler.sources import DEFAULT_ONION_SOURCES, sanitize_sources
+from crawler.sources import sanitize_sources
 from crawler.tor_client import TorClient
+from ingestion.content_extractor import extract_text_from_bytes, extract_text_from_url
 from ingestion.ingestor import ThreatIngestor
 
-# Optional: Groq client (works without API key in demo mode)
+# Optional: Groq client (used when API key is configured)
 _groq_available = False
 try:
     from nlp.groq_client import GroqClient
@@ -82,7 +82,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -93,27 +93,13 @@ entity_extractor = EntityExtractor()
 credential_detector = CredentialDetector()
 financial_detector = FinancialDetector()
 
-# ── load demo / precomputed data ────────────────────────────────────
-DATA_DIR = ROOT.parent / "data"
-
-
-def _load_json(name: str) -> Any:
-    path = DATA_DIR / name
-    if path.exists():
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
-
-
-SYNTHETIC_THREATS: list[str] = _load_json("synthetic_threats.json")
-PRECOMPUTED_ENTITIES: list[dict] = _load_json("precomputed_entities.json")
-
 CRAWL_STATE: dict[str, Any] = {
     "status": "idle",
     "started_at": None,
     "completed_at": None,
     "last_error": None,
     "tor_connected": False,
+    "active_proxy": None,
     "results_count": 0,
 }
 CRAWLED_RECORDS: list[dict[str, Any]] = []
@@ -206,7 +192,9 @@ def health():
         "status": "ok",
         "service": "DarkIntel-AI",
         "groq_available": _groq_available,
-        "demo_data_loaded": len(SYNTHETIC_THREATS) > 0,
+        "real_data_only": True,
+        "records_buffered": INGESTOR.recent(limit=0).get("total_buffered", 0),
+        "crawler_records": len(CRAWLED_RECORDS),
         "timestamp": datetime.now().isoformat(),
     }
 
@@ -261,10 +249,16 @@ def nlp_analyze(req: TextRequest):
         factors.append("keyword_match")
     if len(regex_entities.get("wallets", [])) > 0:
         factors.append("wallets_present")
+    if len(regex_entities.get("credentials", [])) > 0:
+        factors.append("credentials_present")
     if len(regex_entities.get("emails", [])) > 2:
         factors.append("multiple_emails")
     if len(regex_entities.get("ips", [])) > 0:
         factors.append("ips_present")
+    if len(regex_entities.get("domains", [])) > 0:
+        factors.append("domains_present")
+    if len(regex_entities.get("companies", [])) > 0:
+        factors.append("companies_present")
     if slang_result["slang_count"] > 0:
         factors.append("dark_web_slang_detected")
 
@@ -275,6 +269,11 @@ def nlp_analyze(req: TextRequest):
             "wallets": regex_entities.get("wallets", []),
             "emails": regex_entities.get("emails", []),
             "ips": regex_entities.get("ips", []),
+            "domains": regex_entities.get("domains", []),
+            "credentials": regex_entities.get("credentials", []),
+            "companies": list(
+                dict.fromkeys(regex_entities.get("companies", []) + organizations)
+            ),
             "organizations": organizations,
         },
         "threat_score": {"score": score, "level": level, "factors": factors},
@@ -376,40 +375,48 @@ def leaks_identities(req: PostsRequest):
     """Link identities across multiple posts."""
     posts = req.posts
     if not posts:
-        # Use demo data if no posts provided
-        posts = [
-            {"id": f"demo_{i}", "content": msg, "platform": f"forum_{i % 3}"}
-            for i, msg in enumerate(SYNTHETIC_THREATS[:10])
-        ]
+        return {
+            "identity_profiles": [],
+            "linked_actors": [],
+            "cross_platform_links": 0,
+            "total_identities": 0,
+            "total_linked": 0,
+            "summary": "No real posts provided. Ingest or crawl sources first.",
+        }
     return link_identities(posts)
 
 
 # ====================================================================
-# Threat Feed (demo data)
+# Threat Feed (real ingested/crawled data)
 # ====================================================================
 
 
 @app.get("/api/threats/feed")
 def threat_feed(limit: int = 20):
-    """Get the threat feed — uses precomputed demo data."""
+    """Get analyzed threat feed from real ingested/crawled data only."""
+    live_items = INGESTOR.recent(limit=max(limit * 5, 200)).get("items", [])
     threats = []
-    for i, msg in enumerate(SYNTHETIC_THREATS[:limit]):
+    for i, item in enumerate(live_items[: max(limit, 0)]):
+        msg = str(item.get("text", ""))
+        if not msg.strip():
+            continue
         entities = entity_extractor.extract_regex_entities(msg)
         score, level = calculate_base_score(msg, entities)
         slang = decode_message(msg)
         threats.append(
             {
-                "id": f"threat_{i:03d}",
-                "content": msg[:200] + ("..." if len(msg) > 200 else ""),
+                "id": str(item.get("id", f"threat_{i:03d}")),
+                "content": msg[:220] + ("..." if len(msg) > 220 else ""),
                 "full_content": msg,
                 "entities": entities,
                 "threat_score": score,
                 "threat_level": level,
                 "slang_count": slang["slang_count"],
-                "timestamp": datetime.now().isoformat(),
+                "source": item.get("source", "unknown"),
+                "timestamp": item.get("ingested_at", datetime.now().isoformat()),
             }
         )
-    return {"threats": threats, "total": len(threats)}
+    return {"threats": threats, "total": len(threats), "real_data_only": True}
 
 
 # ====================================================================
@@ -420,20 +427,25 @@ def threat_feed(limit: int = 20):
 @app.get("/api/dashboard/stats")
 def dashboard_stats():
     """Get summary statistics for the dashboard."""
-    # Compute from synthetic threats
+    items = INGESTOR.recent(limit=1000).get("items", [])
     levels = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
     total_entities = 0
-    for msg in SYNTHETIC_THREATS:
+    for item in items:
+        msg = str(item.get("text", ""))
+        if not msg.strip():
+            continue
         ents = entity_extractor.extract_regex_entities(msg)
         _, level = calculate_base_score(msg, ents)
         levels[level] = levels.get(level, 0) + 1
         total_entities += sum(len(v) for v in ents.values())
 
     return {
-        "total_threats_analyzed": len(SYNTHETIC_THREATS),
+        "total_threats_analyzed": len(items),
         "threat_distribution": levels,
         "total_entities_extracted": total_entities,
-        "modules_active": 5,
+        "modules_active": 8,
+        "crawler_records": len(CRAWLED_RECORDS),
+        "real_data_only": True,
         "last_scan": datetime.now().isoformat(),
         "status": "operational",
     }
@@ -445,12 +457,24 @@ def dashboard_data():
     stats = dashboard_stats()
     feed = threat_feed(limit=10)
 
-    # Identity linking on demo data
-    posts = [
-        {"id": f"post_{i}", "content": msg, "platform": f"forum_{i % 3}"}
-        for i, msg in enumerate(SYNTHETIC_THREATS[:20])
-    ]
-    identities = link_identities(posts)
+    posts = []
+    for item in INGESTOR.recent(limit=120).get("items", []):
+        posts.append(
+            {
+                "id": item.get("id"),
+                "content": item.get("text", ""),
+                "platform": item.get("source", "unknown"),
+            }
+        )
+    identities = (
+        link_identities(posts)
+        if posts
+        else {
+            "total_identities": 0,
+            "cross_platform_links": 0,
+            "linked_actors": [],
+        }
+    )
 
     return {
         "stats": stats,
@@ -460,19 +484,89 @@ def dashboard_data():
             "cross_platform_links": identities["cross_platform_links"],
             "linked_actors": identities["linked_actors"][:5],
         },
+        "real_data_only": True,
         "timestamp": datetime.now().isoformat(),
     }
 
 
-# ====================================================================
-# Precomputed entities endpoint
-# ====================================================================
+@app.get("/api/analytics/early-warning")
+def early_warning():
+    """Detect emerging attack signals from recent real-world ingest stream."""
+    now = datetime.now()
+    items = INGESTOR.recent(limit=1000).get("items", [])
 
+    current_hour: list[dict[str, Any]] = []
+    previous_hour: list[dict[str, Any]] = []
+    for item in items:
+        ts_raw = item.get("ingested_at")
+        try:
+            ts = datetime.fromisoformat(str(ts_raw))
+        except Exception:
+            continue
 
-@app.get("/api/precomputed/entities")
-def precomputed_entities():
-    """Return precomputed entity extraction results."""
-    return {"count": len(PRECOMPUTED_ENTITIES), "data": PRECOMPUTED_ENTITIES[:20]}
+        age_min = (now - ts).total_seconds() / 60.0
+        if 0 <= age_min <= 60:
+            current_hour.append(item)
+        elif 60 < age_min <= 120:
+            previous_hour.append(item)
+
+    def score_of(record: dict[str, Any]) -> int:
+        text = str(record.get("text", ""))
+        ents = entity_extractor.extract_regex_entities(text)
+        score, _ = calculate_base_score(text, ents)
+        score = min(score + decode_message(text).get("risk_boost", 0), 100)
+        return score
+
+    current_scores = [score_of(r) for r in current_hour]
+    previous_scores = [score_of(r) for r in previous_hour]
+
+    high_current = sum(1 for s in current_scores if s >= 65)
+    high_previous = sum(1 for s in previous_scores if s >= 65)
+    critical_current = sum(1 for s in current_scores if s >= 85)
+
+    current_count = len(current_hour)
+    prev_count = len(previous_hour)
+    surge_ratio = round((current_count / max(prev_count, 1)), 2)
+
+    level = "LOW"
+    if current_count >= 4 and surge_ratio >= 2.0:
+        level = "HIGH"
+    if high_current >= 4 or critical_current >= 2:
+        level = "HIGH"
+    if (critical_current >= 3 and surge_ratio >= 1.5) or high_current >= 7:
+        level = "CRITICAL"
+    elif high_current >= 2:
+        level = "MEDIUM"
+
+    top_companies: dict[str, int] = {}
+    for item in current_hour:
+        companies = entity_extractor.extract_regex_entities(
+            str(item.get("text", ""))
+        ).get("companies", [])
+        for c in companies:
+            top_companies[c] = top_companies.get(c, 0) + 1
+
+    top_company_list = [
+        {"company": k, "mentions": v}
+        for k, v in sorted(top_companies.items(), key=lambda kv: kv[1], reverse=True)[
+            :5
+        ]
+    ]
+
+    return {
+        "warning_level": level,
+        "current_window_records": current_count,
+        "previous_window_records": prev_count,
+        "surge_ratio": surge_ratio,
+        "high_risk_current": high_current,
+        "high_risk_previous": high_previous,
+        "critical_current": critical_current,
+        "top_companies": top_company_list,
+        "summary": (
+            f"Early-warning level {level}. "
+            f"Current hour={current_count}, previous hour={prev_count}, surge={surge_ratio}x."
+        ),
+    }
 
 
 # ====================================================================
@@ -494,9 +588,14 @@ def correlate_signals(req: MultiTextRequest):
 
 @app.get("/api/alerts")
 def get_alerts(limit: int = 20, min_priority: str = "MEDIUM"):
-    """Generate prioritized alerts from the threat feed."""
-    sample = SYNTHETIC_THREATS[: max(limit, 0)]
-    return build_prioritized_alerts(sample, min_priority=min_priority.upper())
+    """Generate prioritized alerts from real ingested feed."""
+    items = INGESTOR.recent(limit=max(limit * 5, 200)).get("items", [])
+    sample = [
+        str(it.get("text", "")) for it in items if str(it.get("text", "")).strip()
+    ]
+    return build_prioritized_alerts(
+        sample[: max(limit, 0)], min_priority=min_priority.upper()
+    )
 
 
 @app.post("/api/alerts/generate")
@@ -520,6 +619,81 @@ def ingest_sources(req: IngestRequest):
     return INGESTOR.ingest_many(payload)
 
 
+@app.post("/api/ingest/file")
+async def ingest_file(
+    file: UploadFile = File(...),
+    source: str = Form(default="file_upload"),
+    language: str = Form(default="unknown"),
+):
+    """Ingest data from file of any form (text/json/csv/pdf/image)."""
+    filename = file.filename or "uploaded.bin"
+    payload = await file.read()
+    extracted = extract_text_from_bytes(
+        payload, filename=filename, content_type=file.content_type
+    )
+    text = str(extracted.get("text", "")).strip()
+    if not text:
+        return {
+            "ingested_count": 0,
+            "summary": "No extractable text found in uploaded file.",
+            "file": {
+                "name": filename,
+                "kind": extracted.get("kind"),
+                "warnings": extracted.get("warnings", []),
+            },
+        }
+
+    ing = INGESTOR.ingest_many(
+        [
+            {
+                "text": text,
+                "source": source,
+                "language": language,
+            }
+        ]
+    )
+    return {
+        "file": {
+            "name": filename,
+            "kind": extracted.get("kind"),
+            "length": extracted.get("length", 0),
+            "warnings": extracted.get("warnings", []),
+        },
+        "ingest_result": ing,
+    }
+
+
+@app.post("/api/ingest/url")
+def ingest_url(url: str = Form(...), source: str = Form(default="url_fetch")):
+    """Ingest data from URL (supports html/json/csv/pdf/image payloads)."""
+    extracted = extract_text_from_url(url)
+    text = str(extracted.get("text", "")).strip()
+    if not text:
+        return {
+            "ingested_count": 0,
+            "summary": "No extractable text found at URL.",
+            "url": url,
+            "kind": extracted.get("kind"),
+            "warnings": extracted.get("warnings", []),
+        }
+
+    ing = INGESTOR.ingest_many(
+        [
+            {
+                "text": text,
+                "source": source,
+                "language": "unknown",
+            }
+        ]
+    )
+    return {
+        "url": url,
+        "kind": extracted.get("kind"),
+        "warnings": extracted.get("warnings", []),
+        "ingest_result": ing,
+    }
+
+
 @app.get("/api/ingest/recent")
 def ingest_recent(limit: int = 20, source_type: str | None = None):
     """Return recent ingested source records."""
@@ -541,17 +715,22 @@ def crawler_start(req: CrawlRequest):
             "completed_at": None,
             "last_error": None,
             "tor_connected": False,
+            "active_proxy": req.tor_proxy,
             "results_count": 0,
         }
     )
 
-    urls = req.urls or [x["url"] for x in DEFAULT_ONION_SOURCES]
-    source_map = {x["url"]: x["source"] for x in DEFAULT_ONION_SOURCES}
+    urls = req.urls
+    if not urls:
+        CRAWL_STATE.update(
+            {"status": "failed", "last_error": "no_live_sources_provided"}
+        )
+        raise HTTPException(status_code=400, detail="No live .onion URLs provided")
     sources = sanitize_sources(
         [
             {
                 "url": u,
-                "source": source_map.get(u, f"{req.source_prefix}_source"),
+                "source": f"{req.source_prefix}_source",
                 "category": "unknown",
             }
             for u in urls
@@ -563,18 +742,28 @@ def crawler_start(req: CrawlRequest):
 
     client = TorClient(tor_proxy=req.tor_proxy, timeout=req.timeout_seconds)
     conn = client.check_connection()
+
+    # Auto-fallback for common Tor Browser port when service port is unavailable.
+    if not conn.get("connected") and req.tor_proxy.strip() == "127.0.0.1:9050":
+        alt_proxy = "127.0.0.1:9150"
+        alt_client = TorClient(tor_proxy=alt_proxy, timeout=req.timeout_seconds)
+        alt_conn = alt_client.check_connection()
+        if alt_conn.get("connected"):
+            client = alt_client
+            conn = alt_conn
+            CRAWL_STATE["active_proxy"] = alt_proxy
+
     CRAWL_STATE["tor_connected"] = bool(conn.get("connected"))
     if not conn.get("connected"):
+        friendly = _friendly_tor_error(conn.get("message", "unknown_error"))
         CRAWL_STATE.update(
             {
                 "status": "failed",
                 "completed_at": datetime.now().isoformat(),
-                "last_error": f"tor_unreachable: {conn.get('message')}",
+                "last_error": friendly,
             }
         )
-        raise HTTPException(
-            status_code=502, detail=f"Tor unavailable: {conn.get('message')}"
-        )
+        raise HTTPException(status_code=502, detail=friendly)
 
     crawled_now: list[dict[str, Any]] = []
     ingested_payload: list[dict[str, str]] = []
@@ -612,6 +801,7 @@ def crawler_start(req: CrawlRequest):
     )
     return {
         "crawl_state": CRAWL_STATE,
+        "active_proxy": CRAWL_STATE.get("active_proxy"),
         "sources_attempted": len(sources),
         "sources_successful": len([x for x in crawled_now if x["status"] == "success"]),
         "sources_failed": len([x for x in crawled_now if x["status"] != "success"]),
@@ -651,16 +841,6 @@ def company_lookup(name: str):
     recent_ingested = INGESTOR.recent(limit=500).get("items", [])
     records.extend(recent_ingested)
 
-    # Existing synthetic dataset as supplemental signal
-    for i, text in enumerate(SYNTHETIC_THREATS):
-        records.append(
-            {
-                "text": text,
-                "source": f"synthetic_feed_{i % 5}",
-                "timestamp": datetime.now().isoformat(),
-            }
-        )
-
     return build_company_risk_report(name, records)
 
 
@@ -674,6 +854,18 @@ def _max_severity(levels: list[str]) -> str:
     if not levels:
         return "LOW"
     return max(levels, key=lambda lv: order.get(lv, 0))
+
+
+def _friendly_tor_error(message: str) -> str:
+    text = str(message or "")
+    if "10061" in text or "actively refused" in text:
+        return (
+            "Tor proxy unreachable. Start Tor service/browser and use proxy "
+            "127.0.0.1:9050 (service) or 127.0.0.1:9150 (Tor Browser)."
+        )
+    if "timed out" in text.lower():
+        return "Tor request timed out. Verify Tor is running and internet is available."
+    return f"Tor unavailable: {text}"
 
 
 # ====================================================================
@@ -693,9 +885,7 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     logger.info("DarkIntel-AI server starting on http://localhost:%d", port)
     logger.info("API docs at http://localhost:%d/docs", port)
-    logger.info(
-        "Groq LLM: %s", "available" if _groq_available else "demo mode (no API key)"
-    )
-    logger.info("Demo data: %d synthetic threats loaded", len(SYNTHETIC_THREATS))
+    logger.info("Groq LLM: %s", "available" if _groq_available else "not configured")
+    logger.info("Mode: real-data-only")
 
     uvicorn.run("server:app", host="0.0.0.0", port=port, reload=True)

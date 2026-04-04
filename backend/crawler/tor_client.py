@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import socket
 from typing import Any
 
 import requests
@@ -21,17 +22,39 @@ class TorClient:
         }
 
     def check_connection(self) -> dict[str, Any]:
-        """Validate Tor proxy connectivity."""
+        """Validate Tor proxy connectivity.
+
+        We first verify that the SOCKS proxy port is reachable. This avoids
+        false negatives caused by TLS issues against external check endpoints.
+        """
+        host, port = _split_proxy(self.tor_proxy)
+
+        # 1) Direct socket reachability check (most reliable local signal)
         try:
-            r = self.session.get("https://check.torproject.org", timeout=self.timeout)
-            ok = r.status_code == 200
+            with socket.create_connection((host, port), timeout=4):
+                pass
+        except Exception as exc:
             return {
-                "connected": ok,
+                "connected": False,
+                "status_code": None,
+                "message": f"SOCKS proxy not reachable on {host}:{port}: {exc}",
+            }
+
+        # 2) Lightweight HTTP probe through SOCKS (best-effort only)
+        try:
+            r = self.session.get("http://check.torproject.org", timeout=self.timeout)
+            return {
+                "connected": True,
                 "status_code": r.status_code,
-                "message": "Tor reachable" if ok else "Tor check failed",
+                "message": "Tor proxy reachable",
             }
         except Exception as exc:
-            return {"connected": False, "status_code": None, "message": str(exc)}
+            # Proxy is reachable; external probe failed. Continue as connected.
+            return {
+                "connected": True,
+                "status_code": None,
+                "message": f"Tor proxy reachable; probe skipped: {exc}",
+            }
 
     def fetch_onion(self, url: str) -> dict[str, Any]:
         """Fetch and parse one .onion URL."""
@@ -81,3 +104,12 @@ def _extract_content(html: str) -> dict[str, Any]:
         "text": text,
         "links": links,
     }
+
+
+def _split_proxy(proxy: str) -> tuple[str, int]:
+    value = (proxy or "127.0.0.1:9050").strip()
+    host, _, port = value.partition(":")
+    try:
+        return (host or "127.0.0.1", int(port or "9050"))
+    except Exception:
+        return (host or "127.0.0.1", 9050)

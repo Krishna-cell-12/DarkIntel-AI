@@ -1,20 +1,6 @@
-"""Curated crawl source presets for .onion monitoring."""
+"""Source sanitation helpers for .onion monitoring."""
 
 from __future__ import annotations
-
-
-DEFAULT_ONION_SOURCES: list[dict[str, str]] = [
-    {
-        "url": "http://exampleonion1.onion",
-        "source": "forum_watch_1",
-        "category": "forum",
-    },
-    {
-        "url": "http://exampleonion2.onion",
-        "source": "paste_watch_1",
-        "category": "paste",
-    },
-]
 
 
 def sanitize_sources(items: list[dict[str, str]]) -> list[dict[str, str]]:

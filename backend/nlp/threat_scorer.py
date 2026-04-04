@@ -14,13 +14,24 @@ def calculate_base_score(text: str, entities_dict: Dict[str, Any]) -> Tuple[int,
     wallets: List[str] = entities_dict.get("wallets") or []
     emails: List[str] = entities_dict.get("emails") or []
     ips: List[str] = entities_dict.get("ips") or []
+    domains: List[str] = entities_dict.get("domains") or []
+    credentials: List[str] = entities_dict.get("credentials") or []
+    companies: List[str] = entities_dict.get("companies") or []
 
     if len(wallets) > 0:
         score += 20
+    if len(credentials) > 0:
+        score += 25
     if len(emails) > 2:
         score += 15
+    elif len(emails) > 0:
+        score += 8
     if len(ips) > 0:
         score += 10
+    if len(domains) > 0:
+        score += 8
+    if len(companies) > 0:
+        score += 12
 
     if score >= 80:
         level = "CRITICAL"
@@ -33,4 +44,3 @@ def calculate_base_score(text: str, entities_dict: Dict[str, Any]) -> Tuple[int,
 
     score = min(score, 100)
     return score, level
-
