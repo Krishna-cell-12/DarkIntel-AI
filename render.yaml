@@ -21,10 +21,8 @@ services:
     healthCheckPath: /api/health
 
   # ── Frontend: Vite Static Site ──────────────
-  - type: web
+  - type: static
     name: darkintel-frontend
-    runtime: static
-    region: oregon
     plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
