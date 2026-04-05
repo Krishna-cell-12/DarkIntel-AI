@@ -7,7 +7,7 @@
  * Uses real backend data only. No synthetic fallback payloads.
  */
 
-const BASE = 'http://localhost:8000';
+const BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {

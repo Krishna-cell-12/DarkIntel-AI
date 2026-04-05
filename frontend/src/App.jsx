@@ -51,7 +51,7 @@ export default function App() {
   // Health check
   useEffect(() => {
     const check = () => {
-      fetch('http://localhost:8000/api/health')
+      fetch(`${(import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '')}/api/health`)
         .then(r => {
           if (r.ok) {
             setConnected(true);

@@ -1518,4 +1518,5 @@ if __name__ == "__main__":
     logger.info("Groq LLM: %s", "available" if _groq_available else "not configured")
     logger.info("Mode: real-data-only")
 
-    uvicorn.run("server:app", host="0.0.0.0", port=port, reload=True)
+    is_dev = os.getenv("RENDER") is None  # Render sets RENDER=true
+    uvicorn.run("server:app", host="0.0.0.0", port=port, reload=is_dev)
