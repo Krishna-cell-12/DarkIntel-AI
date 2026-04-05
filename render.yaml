@@ -3,7 +3,6 @@
 # Deploys both backend (FastAPI) and frontend (Vite/React)
 # ═══════════════════════════════════════════════
 
-
 services:
   # ── Backend: FastAPI Python Web Service ──────
   - type: web
@@ -21,10 +20,10 @@ services:
         sync: false          # set manually in Render dashboard
     healthCheckPath: /api/health
 
-
   # ── Frontend: Vite Static Site ──────────────
-  - type: static_site
+  - type: web
     name: darkintel-frontend
+    runtime: static
     plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
@@ -36,3 +35,7 @@ services:
     routes:
       - type: rewrite
         source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://darkintel-backend.onrender.com
